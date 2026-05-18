@@ -3,901 +3,526 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Vrinda Stationary & Digital Shop | Premium Quality</title>
+    <title>AI Study Assistant | Private Secure Tutor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Cloudinary Widget Library -->
-    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for code syntax -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #faf9ff;
-            color: #1e1e2f;
-            scroll-behavior: smooth;
-        }
-
-        h1, h2, h3, h4, .logo-text, .nav-links a {
-            font-family: 'Poppins', sans-serif;
-        }
-
-        /* Glassmorphism + sticky nav */
-        .navbar {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            backdrop-filter: blur(20px);
-            background: rgba(255, 255, 255, 0.85);
-            box-shadow: 0 8px 32px rgba(91,46,142,0.08);
-            border-bottom: 1px solid rgba(245,176,66,0.4);
-            padding: 0.8rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            font-size: 2rem;
-            color: #5B2E8E;
-            text-shadow: 0 2px 8px rgba(91,46,142,0.2);
-        }
-
-        .logo-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #5B2E8E, #F5B042);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            font-weight: 600;
-            color: #2d2d3a;
-            transition: 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: #F5B042;
-        }
-
-        .admin-btn {
-            background: linear-gradient(135deg, #5B2E8E, #7b48b5);
-            padding: 0.5rem 1.2rem;
-            border-radius: 40px;
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(91,46,142,0.3);
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .hamburger {
-            display: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            color: #5B2E8E;
-        }
-
-        /* Hero section */
-        .hero {
-            min-height: 90vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: radial-gradient(ellipse at 70% 30%, rgba(245,176,66,0.15), rgba(91,46,142,0.08));
-            backdrop-filter: blur(2px);
-            padding: 2rem;
-        }
-
-        .hero-content {
-            max-width: 800px;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            background: linear-gradient(125deg, #5B2E8E, #F5B042);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 1rem;
-        }
-
-        .stats-row {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            margin: 1.5rem 0;
-            flex-wrap: wrap;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.6);
-            backdrop-filter: blur(8px);
-            padding: 0.7rem 1.5rem;
-            border-radius: 60px;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.05);
-            font-weight: 600;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin: 2rem 0;
-        }
-
-        .btn-primary {
-            background: #25D366;
-            color: white;
-            border: none;
-            padding: 0.9rem 1.8rem;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #5B2E8E, #8b5cc9);
-            color: white;
-            border: none;
-            padding: 0.9rem 1.8rem;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 6px 14px rgba(91,46,142,0.2);
-        }
-
-        .like-dislike {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        .like-btn, .dislike-btn {
-            background: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-        }
-        .like-btn:hover:not(:disabled) { background: #5B2E8E; color: white; }
-        .dislike-btn:hover:not(:disabled) { background: #c0392b; color: white; }
-        .like-btn:disabled, .dislike-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* sections */
-        section {
-            padding: 5rem 2rem;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
-            font-weight: 700;
-            position: relative;
-            display: inline-block;
-            width: 100%;
-            background: linear-gradient(135deg, #5B2E8E, #F5B042);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: rgba(255,255,255,0.75);
-            backdrop-filter: blur(12px);
-            border-radius: 32px;
-            padding: 1.8rem;
-            text-align: center;
-            transition: 0.3s;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
-            border: 1px solid rgba(245,176,66,0.4);
-        }
-        .card:hover { transform: translateY(-8px); background: white; }
-
-        .card i {
-            font-size: 2.8rem;
-            color: #F5B042;
-            margin-bottom: 1rem;
-        }
-
-        /* gallery grid */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.8rem;
-            max-width: 1300px;
-            margin: 0 auto;
-        }
-
-        .gallery-item {
-            position: relative;
-            border-radius: 28px;
-            overflow: hidden;
-            aspect-ratio: 1 / 1;
-            cursor: pointer;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-            transition: 0.2s;
-        }
-        .gallery-item:hover { transform: scale(1.02); }
-
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: 0.3s;
-        }
-
-        /* contact sections */
-        .contact-sections-wrapper {
-            max-width: 1300px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 2.5rem;
-        }
-        
-        .contact-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            justify-content: space-between;
-        }
-        
-        .contact-card {
-            flex: 1;
-            background: rgba(255,255,255,0.75);
-            backdrop-filter: blur(12px);
-            border-radius: 32px;
-            padding: 2rem;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
-            border: 1px solid rgba(245,176,66,0.3);
-            transition: 0.2s;
-        }
-        
-        .contact-card h3 {
-            font-size: 1.6rem;
-            margin-bottom: 1.2rem;
-            color: #5B2E8E;
-        }
-        
-        .whatsapp-card, .comments-card {
-            flex: 1;
-        }
-        
-        .comments-scroll {
-            max-height: 350px;
-            overflow-y: auto;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .comment-item {
-            background: white;
-            margin: 0.6rem 0;
-            padding: 0.8rem;
-            border-radius: 20px;
-            border-left: 5px solid #F5B042;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            position: relative;
-        }
-        .delete-comment-btn {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: 0.2s;
-        }
-        .delete-comment-btn:hover { background: #c0392b; }
-
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            border-radius: 28px;
-            border: 1px solid #ddd;
-            margin-top: 8px;
-            margin-bottom: 12px;
-            font-family: inherit;
-        }
-        
-        .share-btn-inline {
-            margin-top: 1rem;
-            background: #5B2E8E;
-            color: white;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        footer {
-            background: #1a1a2a;
-            color: #ddd;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .social-icons a {
-            color: #F5B042;
-            margin: 0 12px;
-            font-size: 1.6rem;
-            transition: 0.2s;
-        }
-        .social-icons a:hover { color: white; }
-
-        /* modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            max-width: 550px;
-            width: 90%;
-            border-radius: 40px;
-            padding: 2rem;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 1rem;
-            }
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                background: rgba(255,255,255,0.98);
-                backdrop-filter: blur(20px);
-                padding: 1rem;
-                border-radius: 28px;
-                margin-top: 1rem;
-                gap: 1rem;
-            }
-            .nav-links.active {
-                display: flex;
-            }
-            .hamburger {
-                display: block;
-            }
-            .hero h1 {
-                font-size: 2.2rem;
-            }
-            .section-title { font-size: 2rem; }
-            .contact-row {
-                flex-direction: column;
-            }
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1f1f2e;
-            color: #F5B042;
-            padding: 12px 24px;
-            border-radius: 60px;
-            z-index: 3000;
-            font-weight: 500;
-            box-shadow: 0 8px 20px black;
-            animation: fadein 0.3s;
-        }
-
-        @keyframes fadein {
-            from { opacity: 0; bottom: 0; }
-            to { opacity: 1; bottom: 30px; }
-        }
-        .remove-img-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            padding: 4px 12px;
-            cursor: pointer;
-        }
-        .admin-image-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-top: 12px;
-            background: #f5f5f5;
-            padding: 8px;
-            border-radius: 20px;
-        }
-        .admin-comment-item {
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 16px;
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        * { font-family: 'Inter', sans-serif; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .chat-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .dark .chat-scroll::-webkit-scrollbar-thumb { background: #475569; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+        .dark .glass { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .typing-dot { animation: typingPulse 1.4s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingPulse { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-8px); opacity: 1; } }
+        .message-enter { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .sidebar-open { animation: slideIn 0.3s ease-out; }
+        pre { border-radius: 0.75rem; overflow-x: auto; padding: 1rem; margin: 0.75rem 0; background: #0f172a !important; }
+        code { font-family: 'Courier New', monospace; font-size: 0.875rem; }
+        .toast-show { animation: fadeInUp 0.3s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-bubble { word-break: break-word; }
     </style>
 </head>
-<body>
+<body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-300">
+    <div id="app" class="min-h-screen relative"></div>
+    <script>
+        // ============================================
+        // FIREBASE CONFIGURATION
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDEw5uEL1WY6VtUZV7yaOBAuqSnwRgltFY",
+            authDomain: "marriage-halls.firebaseapp.com",
+            databaseURL: "https://marriage-halls-default-rtdb.firebaseio.com",
+            projectId: "marriage-halls",
+            storageBucket: "marriage-halls.firebasestorage.app",
+            messagingSenderId: "343836708279",
+            appId: "1:343836708279:web:4d55ca57685bd87fc06c32"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
 
-<div id="toast-container"></div>
-
-<!-- Sticky Navbar -->
-<nav class="navbar">
-    <div class="logo" id="logoContainer">
-        <i class="fas fa-pen-fancy logo-icon"></i>
-        <span class="logo-text" id="logoText">Vrinda Stationary</span>
-    </div>
-    <div class="hamburger" id="hamburger"><i class="fas fa-bars"></i></div>
-    <div class="nav-links" id="navLinks">
-        <a href="#home">Home</a>
-        <a href="#services">Services</a>
-        <a href="#products">Products</a>
-        <a href="#gallery">Gallery</a>
-        <a href="#contact">Contact</a>
-        <button class="admin-btn" id="adminBtn"><i class="fas fa-user-shield"></i> Admin</button>
-    </div>
-</nav>
-
-<!-- Hero Section -->
-<section id="home" class="hero">
-    <div class="hero-content">
-        <h1>Vrinda Stationary & Digital Shop</h1>
-        <p style="font-size:1.2rem; font-weight:500;">Where creativity meets technology — premium stationery & digital solutions.</p>
-        <div class="stats-row">
-            <div class="stat-card"><i class="fas fa-eye"></i> Visitors: <span id="visitorCount">0</span></div>
-            <div class="stat-card"><i class="fas fa-thumbs-up"></i> Likes: <span id="totalLikes">0</span></div>
-            <div class="stat-card"><i class="fas fa-thumbs-down"></i> Dislikes: <span id="totalDislikes">0</span></div>
-        </div>
-        <div class="action-buttons">
-            <button class="btn-primary" id="orderWhatsAppBtn"><i class="fab fa-whatsapp"></i> Order Now (WhatsApp)</button>
-            <button class="btn-secondary" id="exploreGalleryBtn">Explore Gallery</button>
-        </div>
-        <div class="like-dislike">
-            <button class="like-btn" id="likeBtn"><i class="fas fa-thumbs-up"></i> Like (<span id="likeCount">0</span>)</button>
-            <button class="dislike-btn" id="dislikeBtn"><i class="fas fa-thumbs-down"></i> Dislike (<span id="dislikeCount">0</span>)</button>
-        </div>
-    </div>
-</section>
-
-<!-- Services Section -->
-<section id="services">
-    <h2 class="section-title">✨ Premium Services</h2>
-    <div class="cards-grid">
-        <div class="card"><i class="fas fa-print"></i><h3>Digital Printing</h3><p>High quality, fast turnaround</p></div>
-        <div class="card"><i class="fas fa-book"></i><h3>Stationary Items</h3><p>Notebooks, pens & more</p></div>
-        <div class="card"><i class="fas fa-laptop-code"></i><h3>Digital Services</h3><p>Scan, design, e-invites</p></div>
-    </div>
-</section>
-
-<!-- Products Section with Fixed Notebook Icon -->
-<section id="products">
-    <h2 class="section-title">📦 Trending Products</h2>
-    <div class="cards-grid">
-        <div class="card"><i class="fas fa-book-open"></i><h3>Notebooks</h3><p>Hardbound & spiral</p></div>
-        <div class="card"><i class="fas fa-pen-fancy"></i><h3>Pens</h3><p>Premium gel & fountain</p></div>
-        <div class="card"><i class="fas fa-palette"></i><h3>Art Supplies</h3><p>Colors, brushes, canvas</p></div>
-        <div class="card"><i class="fas fa-briefcase"></i><h3>Office Items</h3><p>Organizers, files</p></div>
-    </div>
-</section>
-
-<!-- Gallery Section -->
-<section id="gallery">
-    <h2 class="section-title">📸 Visual Gallery</h2>
-    <div id="galleryGrid" class="gallery-grid">Loading gallery...</div>
-</section>
-
-<!-- Contact Section -->
-<section id="contact">
-    <h2 class="section-title">📞 Get In Touch</h2>
-    <div class="contact-sections-wrapper">
-        <div class="contact-row">
-            <div class="contact-card">
-                <h3><i class="fas fa-map-marker-alt"></i> Visit Us</h3>
-                <p>📍 Chriaw Buzurg, Deoria, Uttar Pradesh 274202</p>
-                <p><i class="fas fa-phone-alt"></i> +91 98765 43210</p>
-                <p><i class="fab fa-whatsapp"></i> WhatsApp: +91 98765 43210</p>
-                <button id="shareWebsiteBtn" class="share-btn-inline"><i class="fas fa-share-alt"></i> Share Website</button>
-            </div>
-            <div class="contact-card whatsapp-card">
-                <h3><i class="fab fa-whatsapp"></i> Quick Inquiry</h3>
-                <input type="text" id="waName" placeholder="Your Name">
-                <textarea id="waMsg" rows="2" placeholder="Your message..."></textarea>
-                <button id="sendWhatsAppBtn" class="btn-primary" style="width:100%;">Send via WhatsApp</button>
-            </div>
-        </div>
-        <div class="contact-row">
-            <div class="contact-card comments-card">
-                <h3><i class="fas fa-comments"></i> Customer Feedback</h3>
-                <div id="commentList" class="comments-scroll"></div>
-                <input type="text" id="commentName" placeholder="Your name">
-                <textarea id="commentText" rows="2" placeholder="Write a review..."></textarea>
-                <button id="postCommentBtn" class="btn-secondary" style="width:100%;">Post Comment</button>
-            </div>
-        </div>
-    </div>
-</section>
-
-<footer>
-    <div class="social-icons">
-        <a href="#"><i class="fab fa-instagram"></i></a>
-        <a href="#"><i class="fab fa-facebook"></i></a>
-        <a href="#"><i class="fab fa-whatsapp"></i></a>
-    </div>
-    <p>&copy; 2025 Vrinda Stationary & Digital Shop — Excellence in every stroke.</p>
-</footer>
-
-<!-- Admin Modal -->
-<div id="adminModal" class="modal">
-    <div class="modal-content">
-        <h3>Admin Panel 🔐</h3>
-        <button id="uploadLogoBtn" class="btn-primary" style="margin:10px 0; width:100%;">🖼️ Upload / Change Logo</button>
-        <button id="uploadGalleryBtn" class="btn-secondary" style="margin:10px 0; width:100%;">➕ Add Gallery Image</button>
-        <hr>
-        <h4>🗑️ Remove Gallery Images</h4>
-        <div id="adminImageList"></div>
-        <hr>
-        <h4>💬 Manage Customer Feedback</h4>
-        <div id="adminCommentsList"></div>
-        <hr>
-        <h4>📊 Analytics</h4>
-        <p>👁️ Views: <span id="adminViews">0</span> | 👍 Likes: <span id="adminLikes">0</span> | 👎 Dislikes: <span id="adminDislikes">0</span></p>
-        <button id="closeModalBtn" style="margin-top:20px; background:#5B2E8E; color:white; border:none; padding:10px; border-radius:40px; width:100%;">Close Panel</button>
-    </div>
-</div>
-
-<script>
-    // Firebase Config
-    const firebaseConfig = {
-        apiKey: "AIzaSyDY3uar_prhf461oyX78HXh3kM83B6E8Cs",
-        authDomain: "vrinda-stationar-digital-shop.firebaseapp.com",
-        projectId: "vrinda-stationar-digital-shop",
-        storageBucket: "vrinda-stationar-digital-shop.firebasestorage.app",
-        messagingSenderId: "8656255794",
-        appId: "1:8656255794:web:95cb730337850097b4752b",
-        measurementId: "G-GCRYND90EH"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Cloudinary Configuration
-    const cloudName = "dayyryb6n";
-    const uploadPreset = "hr2t0l4v";
-
-    function showToast(msg) {
-        let toastDiv = document.createElement('div');
-        toastDiv.className = 'toast';
-        toastDiv.innerText = msg;
-        document.body.appendChild(toastDiv);
-        setTimeout(() => toastDiv.remove(), 3000);
-    }
-
-    // References
-    const statsRef = db.ref('stats');
-    const galleryRef = db.ref('gallery');
-    const commentsRef = db.ref('comments');
-    const logoRef = db.ref('settings/logoUrl');
-    const userActionRef = db.ref('userActions');
-
-    // Get or create user session ID (localStorage)
-    let userId = localStorage.getItem('vrinda_user_id');
-    if(!userId) {
-        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-        localStorage.setItem('vrinda_user_id', userId);
-    }
-
-    // Visitor counter (once per session)
-    let counted = false;
-    function initVisitor() {
-        if(!counted) {
-            statsRef.child('visitors').transaction(count => (count || 0) + 1);
-            counted = true;
-        }
-        statsRef.child('visitors').on('value', snap => {
-            let val = snap.val() || 0;
-            document.getElementById('visitorCount').innerText = val;
-            if(document.getElementById('adminViews')) document.getElementById('adminViews').innerText = val;
-        });
-    }
-    
-    // Likes/Dislikes with one-time restriction
-    let userLiked = false, userDisliked = false;
-    
-    // Check user's previous action
-    userActionRef.child(userId).once('value', (snap) => {
-        const action = snap.val();
-        if(action === 'like') {
-            userLiked = true;
-            document.getElementById('likeBtn').disabled = true;
-        } else if(action === 'dislike') {
-            userDisliked = true;
-            document.getElementById('dislikeBtn').disabled = true;
-        }
-    });
-    
-    statsRef.child('likes').on('value', snap => { let val = snap.val()||0; document.getElementById('totalLikes').innerText=val; document.getElementById('likeCount').innerText=val; if(document.getElementById('adminLikes')) document.getElementById('adminLikes').innerText=val; });
-    statsRef.child('dislikes').on('value', snap => { let val = snap.val()||0; document.getElementById('totalDislikes').innerText=val; document.getElementById('dislikeCount').innerText=val; if(document.getElementById('adminDislikes')) document.getElementById('adminDislikes').innerText=val; });
-    
-    document.getElementById('likeBtn').onclick = () => {
-        if(userLiked) { showToast("❤️ You already liked!"); return; }
-        if(userDisliked) { showToast("⚠️ You already disliked, can't like now"); return; }
-        statsRef.child('likes').transaction(v=> (v||0)+1);
-        userActionRef.child(userId).set('like');
-        userLiked = true;
-        document.getElementById('likeBtn').disabled = true;
-        showToast("❤️ Thanks for liking!");
-    };
-    
-    document.getElementById('dislikeBtn').onclick = () => {
-        if(userDisliked) { showToast("👎 You already disliked!"); return; }
-        if(userLiked) { showToast("⚠️ You already liked, can't dislike now"); return; }
-        statsRef.child('dislikes').transaction(v=> (v||0)+1);
-        userActionRef.child(userId).set('dislike');
-        userDisliked = true;
-        document.getElementById('dislikeBtn').disabled = true;
-        showToast("😟 We'll improve!");
-    };
-
-    // Load Gallery from Firebase
-    function loadGallery() {
-        galleryRef.on('value', snap => {
-            const images = snap.val() || {};
-            const container = document.getElementById('galleryGrid');
-            container.innerHTML = '';
-            if(Object.keys(images).length===0){ container.innerHTML='<p style="text-align:center;">✨ No images yet. Admin can add beautiful shots.</p>'; return; }
-            Object.entries(images).forEach(([key, url]) => {
-                const div = document.createElement('div');
-                div.className = 'gallery-item';
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = "Gallery";
-                img.style.cursor = "pointer";
-                img.onclick = () => { window.open(url, '_blank'); };
-                let touchStartX = 0;
-                div.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
-                div.addEventListener('touchend', (e) => {
-                    let diff = e.changedTouches[0].clientX - touchStartX;
-                    if(Math.abs(diff) > 70 && !userLiked && !userDisliked) {
-                        if(diff > 0) { 
-                            statsRef.child('likes').transaction(v=> (v||0)+1);
-                            userActionRef.child(userId).set('like');
-                            userLiked = true;
-                            document.getElementById('likeBtn').disabled = true;
-                            showToast("👍 Liked via swipe!");
-                        } else { 
-                            statsRef.child('dislikes').transaction(v=> (v||0)+1);
-                            userActionRef.child(userId).set('dislike');
-                            userDisliked = true;
-                            document.getElementById('dislikeBtn').disabled = true;
-                            showToast("👎 Disliked via swipe!");
-                        }
-                    } else if(Math.abs(diff) > 70) {
-                        showToast("You have already voted!");
+        // ============================================
+        // NEW GEMINI API KEY (working with REST endpoint)
+        // ============================================
+        const GEMINI_API_KEY = "AIzaSyAY2A6xLtr7qPUYhPoiIE_Yc0tLJOt3YuY";
+        const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+        
+        // Direct fetch to Gemini API (more reliable than SDK with this key)
+        async function generateAIResponse(userMessage, history = []) {
+            try {
+                // Build conversation context from history
+                let conversationParts = [];
+                // Add system instruction as first user context
+                const systemInstruction = "You are AI Study Assistant, a warm, encouraging tutor for students. Use simple language, step-by-step explanations, emojis occasionally. For code, show formatted examples. For math, show solving process. Keep responses concise (2-3 paragraphs). Never provide harmful content.";
+                
+                // Add system prompt as a user/assistant primer
+                conversationParts.push({ text: systemInstruction + " Remember to be helpful and educational." });
+                
+                // Add last 6 messages for context
+                if (history && history.length > 0) {
+                    const recentHistory = history.slice(-6);
+                    for (const msg of recentHistory) {
+                        const role = msg.role === 'user' ? 'user' : 'model';
+                        conversationParts.push({ text: msg.content });
                     }
+                }
+                // Add current user message
+                conversationParts.push({ text: `Student: ${userMessage}\n\nTeacher (AI Study Assistant):` });
+                
+                const requestBody = {
+                    contents: [
+                        {
+                            parts: conversationParts
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 800,
+                        topP: 0.95
+                    },
+                    safetySettings: [
+                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+                    ]
+                };
+                
+                const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
                 });
-                div.appendChild(img);
-                container.appendChild(div);
-            });
-        });
-    }
-
-    // Load Comments for public view
-    function loadComments() {
-        commentsRef.orderByKey().limitToLast(30).on('value', snap => {
-            const list = document.getElementById('commentList');
-            list.innerHTML = '';
-            const items = snap.val() || {};
-            Object.values(items).reverse().forEach(c => {
-                let div = document.createElement('div');
-                div.className = 'comment-item';
-                let timestamp = c.timestamp ? new Date(c.timestamp).toLocaleString() : "Just now";
-                div.innerHTML = `<strong><i class="fas fa-user-circle"></i> ${escapeHtml(c.name)}</strong> <span style="font-size:11px; color:#5B2E8E;">${timestamp}</span><br>${escapeHtml(c.text)}`;
-                list.appendChild(div);
-            });
-        });
-    }
-    
-    // Admin: Load comments with delete option
-    function loadAdminComments() {
-        const container = document.getElementById('adminCommentsList');
-        if(!container) return;
-        commentsRef.orderByKey().limitToLast(30).on('value', snap => {
-            container.innerHTML = '<h5 style="margin-bottom:10px;">Recent Comments (Click Delete to remove)</h5>';
-            const items = snap.val() || {};
-            if(Object.keys(items).length === 0) { container.innerHTML += '<p>No comments yet.</p>'; return; }
-            Object.entries(items).reverse().forEach(([key, comment]) => {
-                let div = document.createElement('div');
-                div.className = 'admin-comment-item';
-                div.innerHTML = `
-                    <div style="flex:1">
-                        <strong>${escapeHtml(comment.name)}</strong> <span style="font-size:11px; color:#888;">${comment.timestamp ? new Date(comment.timestamp).toLocaleString() : ''}</span>
-                        <p style="margin-top:5px;">${escapeHtml(comment.text)}</p>
-                    </div>
-                    <button class="remove-img-btn" data-key="${key}" style="background:#e74c3c;">🗑️ Delete</button>
-                `;
-                container.appendChild(div);
-            });
-            document.querySelectorAll('#adminCommentsList .remove-img-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const key = btn.getAttribute('data-key');
-                    commentsRef.child(key).remove().then(() => {
-                        showToast("Comment deleted!");
-                    }).catch(() => showToast("Error deleting"));
-                });
-            });
-        });
-    }
-    
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-
-    document.getElementById('postCommentBtn').onclick = () => {
-        let name = document.getElementById('commentName').value.trim();
-        let text = document.getElementById('commentText').value.trim();
-        if(!name || !text) { showToast("Name and message required"); return; }
-        commentsRef.push({ name, text, timestamp: Date.now() });
-        document.getElementById('commentName').value = '';
-        document.getElementById('commentText').value = '';
-        showToast("💬 Comment posted!");
-    };
-
-    // Logo from db
-    logoRef.on('value', snap => {
-        let logoUrl = snap.val();
-        const logoDiv = document.querySelector('.logo');
-        const existingImg = logoDiv.querySelector('.logo-img-custom');
-        if(existingImg) existingImg.remove();
-        if(logoUrl) {
-            let imgLogo = document.createElement('img');
-            imgLogo.src = logoUrl;
-            imgLogo.className = 'logo-img-custom';
-            imgLogo.style.width = '44px';
-            imgLogo.style.height = '44px';
-            imgLogo.style.borderRadius = '14px';
-            imgLogo.style.objectFit = 'cover';
-            imgLogo.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-            logoDiv.insertBefore(imgLogo, logoDiv.firstChild);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Gemini API error:", response.status, errorText);
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                // Extract text from response
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    return aiText || getFallbackResponse(userMessage);
+                } else {
+                    console.warn("Unexpected Gemini response structure", data);
+                    return getFallbackResponse(userMessage);
+                }
+            } catch(error) {
+                console.error("Gemini fetch error:", error);
+                return getFallbackResponse(userMessage);
+            }
         }
-    });
-
-    // Admin modal handlers
-    const modal = document.getElementById('adminModal');
-    document.getElementById('adminBtn').onclick = () => { modal.style.display='flex'; refreshAdminImageList(); loadAdminComments(); updateAdminStats(); };
-    document.getElementById('closeModalBtn').onclick = () => { modal.style.display='none'; };
-    function updateAdminStats() {
-        statsRef.child('visitors').get().then(s => document.getElementById('adminViews').innerText = s.val()||0);
-        statsRef.child('likes').get().then(s => document.getElementById('adminLikes').innerText = s.val()||0);
-        statsRef.child('dislikes').get().then(s => document.getElementById('adminDislikes').innerText = s.val()||0);
-    }
-
-    // Cloudinary Uploads
-    document.getElementById('uploadLogoBtn').onclick = () => {
-        const widget = window.cloudinary.createUploadWidget(
-            { cloudName: cloudName, uploadPreset: uploadPreset, cropping: true, folder: "vrinda_logos" },
-            (error, result) => {
-                if(!error && result && result.event === "success") {
-                    logoRef.set(result.info.secure_url);
-                    showToast("✅ Logo updated successfully!");
-                } else if(error) { showToast("Upload failed, check preset"); }
+        
+        // Enhanced fallback responses
+        function getFallbackResponse(userMessage) {
+            const lowerMsg = userMessage.toLowerCase();
+            if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) 
+                return "Hello! 👋 I'm your private AI Study Assistant. Ask me about math, coding, science, or exam tips! Your chat history stays private to your account.";
+            if (lowerMsg.includes('math') || lowerMsg.includes('equation')) 
+                return "Let's solve math step-by-step! 📐 Share your equation or problem. For example: 'Solve 2x + 5 = 15' or 'Find the derivative of x²'. I'll explain each step clearly.";
+            if (lowerMsg.includes('code') || lowerMsg.includes('python') || lowerMsg.includes('javascript')) 
+                return "💻 Coding help is here! Share your code or describe what you're building. I can explain loops, functions, classes, and debug errors line by line. What language are you using?";
+            if (lowerMsg.includes('science') || lowerMsg.includes('physics') || lowerMsg.includes('chemistry')) 
+                return "🔬 Science is amazing! I can help with Newton's laws, chemical reactions, cell biology, and more. Which topic are you studying?";
+            if (lowerMsg.includes('exam') || lowerMsg.includes('test') || lowerMsg.includes('study')) 
+                return "📚 Exam prep tips: 1) Active recall - test yourself, 2) Spaced repetition - review over time, 3) Practice problems daily, 4) Teach concepts to others. What subject are you preparing for?";
+            return "I'm your study buddy! 📖 I can help with:\n• Mathematics (algebra, calculus, geometry)\n• Programming (Python, JS, HTML/CSS)\n• Science (physics, chemistry, biology)\n• English & writing\n• Study strategies & exam prep\n\nWhat would you like to learn today?";
+        }
+        
+        // Helper functions
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-24 left-1/2 transform -translate-x-1/2 px-5 py-3 rounded-xl text-white text-sm z-50 toast-show shadow-lg ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function formatDate(date) { 
+            return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }); 
+        }
+        
+        function escapeHtml(text) { 
+            if(!text) return ''; 
+            const div = document.createElement('div'); 
+            div.textContent = text; 
+            return div.innerHTML; 
+        }
+        
+        function renderMarkdown(content) {
+            if(typeof marked === 'undefined') return escapeHtml(content);
+            try {
+                return marked.parse(content, { 
+                    breaks: true, 
+                    highlight: function(code, lang) { 
+                        if(lang && hljs.getLanguage(lang)) 
+                            return hljs.highlight(code, { language: lang }).value; 
+                        return hljs.highlightAuto(code).value; 
+                    } 
+                });
+            } catch(e) { return escapeHtml(content); }
+        }
+        
+        function scrollToBottom() { 
+            setTimeout(() => { 
+                const container = document.getElementById('chat-messages-container'); 
+                if(container) container.scrollTop = container.scrollHeight; 
+            }, 100); 
+        }
+        
+        // Voice input
+        function startVoiceInput(onResult) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { showToast("Voice not supported", 'error'); return null; }
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false; 
+            recognition.interimResults = false; 
+            recognition.lang = 'en-US';
+            recognition.onresult = (event) => { 
+                const text = event.results[0][0].transcript; 
+                if(onResult) onResult(text); 
+            };
+            recognition.onerror = () => showToast("Speech error", 'error');
+            recognition.start();
+            return recognition;
+        }
+        
+        function speakText(text) { 
+            if(window.currentUtterance) window.speechSynthesis.cancel(); 
+            const utterance = new SpeechSynthesisUtterance(text); 
+            utterance.rate = 0.9; 
+            window.currentUtterance = utterance; 
+            window.speechSynthesis.speak(utterance); 
+        }
+        
+        // ========== FIREBASE: PER-USER ISOLATED STORAGE ==========
+        async function saveUserToDatabase(user) {
+            try {
+                const userRef = database.ref(`users/${user.uid}`);
+                const snapshot = await userRef.once('value');
+                if(!snapshot.exists()) {
+                    await userRef.set({ 
+                        email: user.email, 
+                        displayName: user.displayName || user.email.split('@')[0], 
+                        createdAt: new Date().toISOString() 
+                    });
+                }
+                return true;
+            } catch(e) { return false; }
+        }
+        
+        async function saveMessageToFirebase(userId, sessionId, message) {
+            try {
+                const messageRef = database.ref(`users/${userId}/chatMessages/${sessionId}`).push();
+                await messageRef.set({ ...message, timestamp: new Date().toISOString() });
+                const sessionRef = database.ref(`users/${userId}/chatSessions/${sessionId}`);
+                const snap = await sessionRef.once('get');
+                if(snap.exists()) {
+                    const curr = snap.val();
+                    await sessionRef.update({ updatedAt: new Date().toISOString(), messageCount: (curr.messageCount || 0) + 1 });
+                }
+                return true;
+            } catch(e) { return false; }
+        }
+        
+        async function createNewSession(userId, title, firstMessage) {
+            try {
+                const sessionsRef = database.ref(`users/${userId}/chatSessions`);
+                const newSessionRef = sessionsRef.push();
+                const sessionId = newSessionRef.key;
+                const timestamp = new Date().toISOString();
+                await newSessionRef.set({ 
+                    id: sessionId, 
+                    title: title || `Chat ${new Date().toLocaleString()}`, 
+                    createdAt: timestamp, 
+                    updatedAt: timestamp, 
+                    messageCount: 1 
+                });
+                await saveMessageToFirebase(userId, sessionId, firstMessage);
+                return sessionId;
+            } catch(e) { return null; }
+        }
+        
+        async function loadUserSessions(userId) {
+            try {
+                const snapshot = await database.ref(`users/${userId}/chatSessions`).once('value');
+                if(snapshot.exists()) {
+                    const sessionsData = snapshot.val();
+                    const sessionsList = Object.values(sessionsData).sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                    window.sessions = sessionsList;
+                } else { window.sessions = []; }
+                renderSidebar();
+                return window.sessions;
+            } catch(e) { window.sessions = []; renderSidebar(); return []; }
+        }
+        
+        async function loadSessionMessages(userId, sessionId) {
+            try {
+                const snapshot = await database.ref(`users/${userId}/chatMessages/${sessionId}`).once('value');
+                if(snapshot.exists()) {
+                    const messagesData = snapshot.val();
+                    const messagesList = Object.values(messagesData);
+                    window.messages = messagesList;
+                    window.currentSessionId = sessionId;
+                } else { window.messages = []; }
+                renderChatMessages();
+                return window.messages;
+            } catch(e) { window.messages = []; renderChatMessages(); return []; }
+        }
+        
+        async function deleteSessionFromFirebase(userId, sessionId) {
+            try {
+                await database.ref(`users/${userId}/chatSessions/${sessionId}`).remove();
+                await database.ref(`users/${userId}/chatMessages/${sessionId}`).remove();
+                if(window.currentSessionId === sessionId) { 
+                    window.messages = []; 
+                    window.currentSessionId = null; 
+                    renderChatMessages(); 
+                }
+                await loadUserSessions(userId);
+                showToast("Chat history deleted permanently");
+            } catch(e) { showToast("Delete failed", 'error'); }
+        }
+        
+        async function updateSessionTitle(userId, sessionId, firstUserMessage) {
+            if(!firstUserMessage) return;
+            const shortTitle = firstUserMessage.length > 40 ? firstUserMessage.substring(0, 40) + "..." : firstUserMessage;
+            const sessionRef = database.ref(`users/${userId}/chatSessions/${sessionId}`);
+            await sessionRef.update({ title: shortTitle });
+            await loadUserSessions(userId);
+        }
+        
+        // ========== SEND MESSAGE CORE ==========
+        window.sendMessage = async function(content) {
+            if(!window.currentUser) { showToast("Please login", 'error'); return; }
+            if(window.isGenerating) return;
+            if(!content.trim()) return;
+            
+            const userMessage = { role: 'user', content: content.trim() };
+            window.messages.push(userMessage);
+            renderChatMessages();
+            
+            let sessionId = window.currentSessionId;
+            if(!sessionId) {
+                const title = content.slice(0, 50);
+                sessionId = await createNewSession(window.currentUser.uid, title, userMessage);
+                if(sessionId) {
+                    window.currentSessionId = sessionId;
+                    await updateSessionTitle(window.currentUser.uid, sessionId, content);
+                    await loadUserSessions(window.currentUser.uid);
+                }
+            } else {
+                await saveMessageToFirebase(window.currentUser.uid, sessionId, userMessage);
+                if(window.messages.length === 1) await updateSessionTitle(window.currentUser.uid, sessionId, content);
             }
-        );
-        widget.open();
-    };
-
-    document.getElementById('uploadGalleryBtn').onclick = () => {
-        const widget = window.cloudinary.createUploadWidget(
-            { cloudName: cloudName, uploadPreset: uploadPreset, folder: "vrinda_gallery" },
-            (error, result) => {
-                if(!error && result && result.event === "success") {
-                    const newKey = Date.now().toString();
-                    galleryRef.child(newKey).set(result.info.secure_url);
-                    showToast("🖼️ Gallery image added!");
-                } else if(error) { showToast("Upload error, verify preset"); }
+            
+            window.isGenerating = true;
+            renderTypingIndicator(true);
+            
+            const history = window.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+            const aiResponse = await generateAIResponse(content, history);
+            
+            renderTypingIndicator(false);
+            
+            const aiMessage = { role: 'assistant', content: aiResponse };
+            window.messages.push(aiMessage);
+            if(sessionId) {
+                await saveMessageToFirebase(window.currentUser.uid, sessionId, aiMessage);
+                await loadUserSessions(window.currentUser.uid);
             }
-        );
-        widget.open();
-    };
-
-    function refreshAdminImageList() {
-        const container = document.getElementById('adminImageList');
-        if(!container) return;
-        container.innerHTML = '';
-        galleryRef.once('value', snap => {
-            const images = snap.val() || {};
-            if(Object.keys(images).length === 0) { container.innerHTML = '<p>No images in gallery.</p>'; return; }
-            Object.entries(images).forEach(([key, url]) => {
-                let div = document.createElement('div');
-                div.className = 'admin-image-row';
-                let imgMini = document.createElement('img');
-                imgMini.src = url;
-                imgMini.style.width = "60px"; imgMini.style.height = "60px"; imgMini.style.borderRadius = "12px"; imgMini.style.objectFit = "cover";
-                let btn = document.createElement('button');
-                btn.innerText = "❌ Remove";
-                btn.className = "remove-img-btn";
-                btn.onclick = () => { galleryRef.child(key).remove().then(()=>{ showToast("Image removed"); refreshAdminImageList(); }); };
-                div.appendChild(imgMini);
-                div.appendChild(btn);
-                container.appendChild(div);
+            window.isGenerating = false;
+            renderChatMessages();
+            scrollToBottom();
+        };
+        
+        function renderTypingIndicator(show) {
+            const container = document.getElementById('chat-messages-container');
+            if(!container) return;
+            let indicator = document.getElementById('typing-indicator');
+            if(show) {
+                if(!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.id = 'typing-indicator';
+                    indicator.className = 'flex justify-start mb-4 message-enter';
+                    indicator.innerHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-5 py-3"><div class="flex gap-1.5"><div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div><div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div><div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div></div><span class="text-xs text-gray-500 mt-1 block">AI is thinking...</span></div>`;
+                    container.appendChild(indicator);
+                    scrollToBottom();
+                }
+            } else { if(indicator) indicator.remove(); }
+        }
+        
+        function renderChatMessages() {
+            const container = document.getElementById('chat-messages-container');
+            if(!container) return;
+            if(!window.messages || window.messages.length === 0) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 px-4 py-12"><div class="w-28 h-28 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl"><i class="fas fa-graduation-cap text-white text-5xl"></i></div><h2 class="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Study Assistant</h2><p class="text-lg mb-6">Your private tutor — chat history is yours alone, secured by email login</p><div class="flex flex-wrap gap-2 justify-center"><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">📚 Explain concepts</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">💻 Help with code</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">🔢 Solve math</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">📖 Study tips</span></div></div>`;
+                return;
+            }
+            let html = '<div class="max-w-4xl mx-auto">';
+            for(let msg of window.messages) {
+                const isUser = msg.role === 'user';
+                const renderedContent = isUser ? escapeHtml(msg.content) : renderMarkdown(msg.content);
+                html += `<div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 message-enter"><div class="max-w-[85%] ${isUser ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-md'} px-4 py-3">${!isUser ? `<div class="flex items-center gap-2 mb-2"><i class="fas fa-robot text-blue-500 text-sm"></i><span class="text-xs font-semibold text-blue-600 dark:text-blue-400">AI Study Assistant</span></div>` : ''}<div class="prose prose-sm dark:prose-invert max-w-none chat-bubble ${isUser ? 'text-white' : ''}">${renderedContent}</div><div class="flex items-center justify-end gap-3 mt-2 opacity-70 hover:opacity-100 transition"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-xs"><i class="far fa-copy"></i></button>${!isUser ? `<button onclick="window.speakText(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-xs"><i class="fas fa-volume-up"></i></button>` : ''}</div></div></div>`;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+            if(typeof hljs !== 'undefined') document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+            scrollToBottom();
+        }
+        
+        window.copyToClipboard = function(text) { navigator.clipboard.writeText(text); showToast("Copied!"); };
+        window.speakText = speakText;
+        
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar-content');
+            if(!sidebar) return;
+            if(!window.sessions || window.sessions.length === 0) {
+                sidebar.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 py-12"><i class="fas fa-comments text-4xl mb-3 opacity-50"></i><p class="text-sm">No chats yet</p><p class="text-xs mt-1">Your history is private — only you can see it</p></div>`;
+                return;
+            }
+            sidebar.innerHTML = window.sessions.map(session => `
+                <div onclick="window.loadSession('${session.id}')" class="group p-3 rounded-lg cursor-pointer transition-all hover:bg-gray-100 dark:hover:bg-gray-800 ${window.currentSessionId === session.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-800 dark:text-white truncate">${escapeHtml(session.title || 'Chat')}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${formatDate(session.updatedAt)}</p></div>
+                        <button onclick="event.stopPropagation(); window.deleteSession('${session.id}')" class="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 transition"><i class="fas fa-trash-alt text-red-500 text-xs"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        window.loadSession = async (sessionId) => {
+            if(window.currentUser) {
+                await loadSessionMessages(window.currentUser.uid, sessionId);
+                renderSidebar();
+                if(window.innerWidth < 768) toggleSidebar();
+                scrollToBottom();
+            }
+        };
+        
+        window.deleteSession = async (sessionId) => {
+            if(window.currentUser && confirm('Delete this chat history? It will be removed permanently from your account.')) {
+                await deleteSessionFromFirebase(window.currentUser.uid, sessionId);
+            }
+        };
+        
+        window.newChat = async () => {
+            window.messages = [];
+            window.currentSessionId = null;
+            renderChatMessages();
+            renderSidebar();
+            if(window.innerWidth < 768) toggleSidebar();
+        };
+        
+        function toggleSidebar() {
+            window.sidebarOpen = !window.sidebarOpen;
+            const sidebarEl = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if(window.sidebarOpen) {
+                sidebarEl.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+                setTimeout(() => sidebarEl.classList.add('sidebar-open'), 10);
+            } else {
+                sidebarEl.classList.remove('sidebar-open');
+                setTimeout(() => { sidebarEl.classList.add('hidden'); overlay.classList.add('hidden'); }, 300);
+            }
+        }
+        
+        function toggleDarkMode() {
+            window.darkMode = !window.darkMode;
+            localStorage.setItem('darkMode', window.darkMode);
+            if(window.darkMode) { document.documentElement.classList.add('dark'); document.body.classList.add('dark'); }
+            else { document.documentElement.classList.remove('dark'); document.body.classList.remove('dark'); }
+            renderChatMessages();
+        }
+        
+        // ========== AUTHENTICATION UI ==========
+        function renderAuthScreen() {
+            const app = document.getElementById('app');
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4"><div class="w-full max-w-md"><div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20"><div class="text-center mb-8"><div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-5"><i class="fas fa-graduation-cap text-white text-4xl"></i></div><h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">AI Study Assistant</h1><p class="text-gray-500 dark:text-gray-400">Private & Secure — Each email has isolated history</p></div><div id="auth-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition mb-4"><i class="fab fa-google text-red-500"></i><span>Continue with Google</span></button><div class="relative my-6"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white dark:bg-slate-800 text-gray-500">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email Address" class="w-full px-4 py-3 mb-3 bg-gray-50 dark:bg-slate-700 border rounded-xl focus:ring-2 focus:ring-blue-500" required><input type="password" id="login-password" placeholder="Password" class="w-full px-4 py-3 mb-4 bg-gray-50 dark:bg-slate-700 border rounded-xl focus:ring-2 focus:ring-blue-500" required><button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold">Sign In</button></form><p class="text-center text-sm text-gray-600 mt-6">Don't have an account? <a href="#" onclick="window.showSignup()" class="text-blue-600 font-semibold">Create Account</a></p></div></div></div>`;
+            document.getElementById('email-login-form').addEventListener('submit', async(e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const errDiv = document.getElementById('auth-error');
+                try { const userCred = await auth.signInWithEmailAndPassword(email, password); await saveUserToDatabase(userCred.user); }
+                catch(error) { errDiv.textContent = error.message; errDiv.classList.remove('hidden'); }
             });
+        }
+        
+        window.showSignup = function() {
+            const app = document.getElementById('app');
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4"><div class="w-full max-w-md"><div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl p-8"><div class="text-center mb-8"><div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-5"><i class="fas fa-user-plus text-white text-4xl"></i></div><h1 class="text-3xl font-bold text-gray-800 dark:text-white">Create Account</h1><p class="text-gray-500">Your private study space — history never shared</p></div><div id="auth-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 border rounded-xl hover:bg-gray-50 mb-4"><i class="fab fa-google text-red-500"></i>Google</button><div class="relative my-6"><div class="border-t"></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white dark:bg-slate-800">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full Name" class="w-full px-4 py-3 mb-3 bg-gray-50 border rounded-xl" required><input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-3 mb-3 bg-gray-50 border rounded-xl" required><input type="password" id="signup-password" placeholder="Password (min 6)" class="w-full px-4 py-3 mb-4 bg-gray-50 border rounded-xl" required><button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold">Sign Up</button></form><p class="text-center text-sm mt-6">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-blue-600 font-semibold">Sign In</a></p></div></div></div>`;
+            document.getElementById('signup-form').addEventListener('submit', async(e) => {
+                e.preventDefault();
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const errDiv = document.getElementById('auth-error');
+                if(password.length < 6) { errDiv.textContent = 'Password must be at least 6 characters'; errDiv.classList.remove('hidden'); return; }
+                try {
+                    const userCred = await auth.createUserWithEmailAndPassword(email, password);
+                    await userCred.user.updateProfile({ displayName: name });
+                    await saveUserToDatabase({ ...userCred.user, displayName: name });
+                } catch(error) { errDiv.textContent = error.message; errDiv.classList.remove('hidden'); }
+            });
+        };
+        
+        window.handleGoogleLogin = async () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try { const result = await auth.signInWithPopup(provider); await saveUserToDatabase(result.user); }
+            catch(error) { showToast(error.message, 'error'); }
+        };
+        
+        window.renderAuthScreen = renderAuthScreen;
+        
+        // ========== MAIN CHAT UI ==========
+        function renderChatUI() {
+            const app = document.getElementById('app');
+            app.innerHTML = `<div><div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div><div id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl z-50 hidden flex flex-col"><div class="p-4 border-b flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center"><i class="fas fa-graduation-cap text-white text-sm"></i></div><span class="font-bold">Study Assistant</span></div><button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100 md:hidden"><i class="fas fa-times"></i></button></div><div class="p-4 border-b"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">${window.currentUser?.displayName?.[0] || window.currentUser?.email?.[0]?.toUpperCase() || 'U'}</div><div class="flex-1"><p class="font-medium truncate">${escapeHtml(window.currentUser?.displayName || window.currentUser?.email?.split('@')[0])}</p><p class="text-xs text-gray-500 truncate">${window.currentUser?.email}</p></div></div></div><div class="p-4"><button onclick="window.newChat()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2.5 rounded-xl font-medium flex items-center justify-center gap-2"><i class="fas fa-plus"></i> New Chat</button></div><div id="sidebar-content" class="flex-1 overflow-y-auto px-2"></div><div class="p-4 border-t space-y-2"><button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'}"></i><span>${window.darkMode ? 'Light Mode' : 'Dark Mode'}</span></button><button onclick="firebase.auth().signOut()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button></div></div><div class="flex flex-col h-screen"><div class="glass px-4 py-3 flex items-center gap-3 sticky top-0 z-30"><button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100"><i class="fas fa-bars text-gray-700 dark:text-gray-300 text-xl"></i></button><div class="flex items-center gap-2"><div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center"><i class="fas fa-graduation-cap text-white text-sm"></i></div><h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Study Assistant</h1></div><div class="ml-auto text-xs text-gray-500"><i class="fas fa-lock text-green-500 mr-1"></i> Private History (Email-isolated)</div></div><div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 chat-scroll"></div><div class="p-4 glass border-t"><div class="flex gap-2"><textarea id="message-input" rows="1" placeholder="Ask me anything... (Your chats are private to your email account)" class="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border rounded-xl focus:ring-2 focus:ring-blue-500 resize-none" style="min-height: 50px;"></textarea><button id="voice-btn" class="px-4 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200"><i class="fas fa-microphone text-gray-600"></i></button><button id="send-btn" class="px-5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"><i class="fas fa-paper-plane text-lg"></i></button></div></div></div></div>`;
+            renderChatMessages();
+            loadUserSessions(window.currentUser.uid);
+            const sendBtn = document.getElementById('send-btn');
+            const messageInput = document.getElementById('message-input');
+            const voiceBtn = document.getElementById('voice-btn');
+            sendBtn.onclick = () => { const text = messageInput.value.trim(); if(text) { messageInput.value = ''; window.sendMessage(text); } };
+            messageInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); } };
+            voiceBtn.onclick = () => { const origIcon = voiceBtn.innerHTML; voiceBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-red-500"></i>'; const recog = startVoiceInput((text) => { messageInput.value = text; window.sendMessage(text); voiceBtn.innerHTML = origIcon; }); setTimeout(() => { if(recog) recog.abort(); voiceBtn.innerHTML = origIcon; }, 10000); };
+        }
+        
+        // Initialize application state
+        window.messages = [];
+        window.sessions = [];
+        window.currentSessionId = null;
+        window.isGenerating = false;
+        window.darkMode = localStorage.getItem('darkMode') === 'true';
+        if(window.darkMode) { document.documentElement.classList.add('dark'); document.body.classList.add('dark'); }
+        
+        auth.onAuthStateChanged(async (user) => {
+            window.currentUser = user;
+            if(user) { await saveUserToDatabase(user); renderChatUI(); }
+            else { renderAuthScreen(); }
         });
-    }
-
-    // WhatsApp and contact
-    document.getElementById('orderWhatsAppBtn').onclick = () => { window.open('https://wa.me/919876543210?text=Hello%2C%20I%20want%20to%20place%20an%20order%20from%20Vrinda%20Shop!','_blank'); };
-    document.getElementById('sendWhatsAppBtn').onclick = () => {
-        let name = document.getElementById('waName').value.trim();
-        let msg = document.getElementById('waMsg').value.trim();
-        if(!name) { showToast("Enter your name"); return; }
-        let text = `Name: ${name}%0AMessage: ${msg || "Inquiry about products"}`;
-        window.open(`https://wa.me/919876543210?text=${text}`,'_blank');
-    };
-    document.getElementById('exploreGalleryBtn').onclick = () => document.getElementById('gallery').scrollIntoView({behavior:'smooth'});
-    document.getElementById('shareWebsiteBtn').onclick = () => { if(navigator.share) navigator.share({title:'Vrinda Stationary & Digital Shop',url:window.location.href}); else { navigator.clipboard.writeText(window.location.href); showToast("Link copied to clipboard!"); } };
-
-    // Mobile hamburger
-    const hamburger = document.getElementById('hamburger');
-    const navLinksDiv = document.getElementById('navLinks');
-    hamburger.onclick = () => navLinksDiv.classList.toggle('active');
-
-    // Initialize
-    initVisitor();
-    loadGallery();
-    loadComments();
-    showToast("✨ Welcome to Vrinda Stationary & Digital Shop!");
-</script>
+    </script>
 </body>
-</html>
+    </html>
