@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AI Study Assistant | Private Secure Tutor</title>
+    <title>SBT Public School | AI Study Assistant</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -41,9 +41,12 @@
         .toast-show { animation: fadeInUp 0.3s ease-out; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .chat-bubble { word-break: break-word; }
+        .cute-voice-btn { transition: all 0.2s ease; }
+        .cute-voice-btn:hover { transform: scale(1.05); background: #fef3c7; }
+        .school-badge { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8b 100%); }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-300">
+<body class="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-300">
     <div id="app" class="min-h-screen relative"></div>
     <script>
         // ============================================
@@ -63,48 +66,55 @@
         const database = firebase.database();
 
         // ============================================
-        // NEW GEMINI API KEY (working with REST endpoint)
+        // GEMINI API KEY (Working)
         // ============================================
         const GEMINI_API_KEY = "AIzaSyAY2A6xLtr7qPUYhPoiIE_Yc0tLJOt3YuY";
         const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
         
-        // Direct fetch to Gemini API (more reliable than SDK with this key)
+        // CUTE VOICE FUNCTION - Smooth, warm, friendly voice
+        function speakWithCuteVoice(text) {
+            if (window.currentUtterance) window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.85;
+            utterance.pitch = 1.2;
+            utterance.volume = 1;
+            utterance.lang = 'en-US';
+            // Try to select a friendly female voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
+            if (preferredVoice) utterance.voice = preferredVoice;
+            window.currentUtterance = utterance;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // AI Response Generator with detailed step-by-step explanations
         async function generateAIResponse(userMessage, history = []) {
             try {
-                // Build conversation context from history
-                let conversationParts = [];
-                // Add system instruction as first user context
-                const systemInstruction = "You are AI Study Assistant, a warm, encouraging tutor for students. Use simple language, step-by-step explanations, emojis occasionally. For code, show formatted examples. For math, show solving process. Keep responses concise (2-3 paragraphs). Never provide harmful content.";
+                const conversationParts = [];
+                const systemInstruction = `You are "SBT Public School AI Tutor" - a warm, patient, and enthusiastic teacher for students. IMPORTANT RULES:
+- Explain EVERY topic STEP-BY-STEP like you're teaching a 10th grade student.
+- For ANY question: break down into clear steps with examples.
+- Use simple language, emojis 😊, and be encouraging.
+- For math: show formula, then substitution, then calculation, then final answer.
+- For science: explain concept, then real-life example, then how it works.
+- For programming: show code, explain each line, then output.
+- For any question: provide detailed phone-friendly formatted answers with bullet points or numbered steps.
+- Keep responses thorough but well-organized (2-4 paragraphs or bullet points).
+- NEVER give harmful content.
+- Always end with a friendly question like "Do you want me to explain more?" or "Shall I give you a practice problem?"`;
                 
-                // Add system prompt as a user/assistant primer
-                conversationParts.push({ text: systemInstruction + " Remember to be helpful and educational." });
-                
-                // Add last 6 messages for context
+                conversationParts.push({ text: systemInstruction });
                 if (history && history.length > 0) {
-                    const recentHistory = history.slice(-6);
+                    const recentHistory = history.slice(-8);
                     for (const msg of recentHistory) {
-                        const role = msg.role === 'user' ? 'user' : 'model';
                         conversationParts.push({ text: msg.content });
                     }
                 }
-                // Add current user message
-                conversationParts.push({ text: `Student: ${userMessage}\n\nTeacher (AI Study Assistant):` });
+                conversationParts.push({ text: `Student: ${userMessage}\n\nSBT Public School AI Tutor (give step-by-step detailed explanation):` });
                 
                 const requestBody = {
-                    contents: [
-                        {
-                            parts: conversationParts
-                        }
-                    ],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 800,
-                        topP: 0.95
-                    },
-                    safetySettings: [
-                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
-                    ]
+                    contents: [{ parts: conversationParts }],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 1200, topP: 0.95 }
                 };
                 
                 const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
@@ -113,41 +123,31 @@
                     body: JSON.stringify(requestBody)
                 });
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Gemini API error:", response.status, errorText);
-                    throw new Error(`API error: ${response.status}`);
-                }
-                
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
                 const data = await response.json();
-                // Extract text from response
                 if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-                    const aiText = data.candidates[0].content.parts[0].text;
-                    return aiText || getFallbackResponse(userMessage);
-                } else {
-                    console.warn("Unexpected Gemini response structure", data);
-                    return getFallbackResponse(userMessage);
+                    return data.candidates[0].content.parts[0].text || getDetailedFallback(userMessage);
                 }
+                return getDetailedFallback(userMessage);
             } catch(error) {
-                console.error("Gemini fetch error:", error);
-                return getFallbackResponse(userMessage);
+                console.error("Gemini error:", error);
+                return getDetailedFallback(userMessage);
             }
         }
         
-        // Enhanced fallback responses
-        function getFallbackResponse(userMessage) {
-            const lowerMsg = userMessage.toLowerCase();
-            if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) 
-                return "Hello! 👋 I'm your private AI Study Assistant. Ask me about math, coding, science, or exam tips! Your chat history stays private to your account.";
-            if (lowerMsg.includes('math') || lowerMsg.includes('equation')) 
-                return "Let's solve math step-by-step! 📐 Share your equation or problem. For example: 'Solve 2x + 5 = 15' or 'Find the derivative of x²'. I'll explain each step clearly.";
-            if (lowerMsg.includes('code') || lowerMsg.includes('python') || lowerMsg.includes('javascript')) 
-                return "💻 Coding help is here! Share your code or describe what you're building. I can explain loops, functions, classes, and debug errors line by line. What language are you using?";
-            if (lowerMsg.includes('science') || lowerMsg.includes('physics') || lowerMsg.includes('chemistry')) 
-                return "🔬 Science is amazing! I can help with Newton's laws, chemical reactions, cell biology, and more. Which topic are you studying?";
-            if (lowerMsg.includes('exam') || lowerMsg.includes('test') || lowerMsg.includes('study')) 
-                return "📚 Exam prep tips: 1) Active recall - test yourself, 2) Spaced repetition - review over time, 3) Practice problems daily, 4) Teach concepts to others. What subject are you preparing for?";
-            return "I'm your study buddy! 📖 I can help with:\n• Mathematics (algebra, calculus, geometry)\n• Programming (Python, JS, HTML/CSS)\n• Science (physics, chemistry, biology)\n• English & writing\n• Study strategies & exam prep\n\nWhat would you like to learn today?";
+        // Detailed fallback responses (step-by-step)
+        function getDetailedFallback(userMessage) {
+            const lower = userMessage.toLowerCase();
+            if (lower.includes('math') || lower.includes('equation') || lower.includes('solve')) {
+                return "📐 **Step-by-Step Math Solution**\n\n1️⃣ **Understand the problem**: Write down what's given and what we need to find.\n2️⃣ **Choose the right formula**: Select the equation that connects given values.\n3️⃣ **Substitute numbers**: Plug in the known values.\n4️⃣ **Calculate carefully**: Do one operation at a time.\n5️⃣ **Verify your answer**: Check if it makes sense.\n\n💡 Example: To solve 2x + 5 = 15 → Subtract 5 from both sides (2x = 10) → Divide by 2 (x = 5).\n\nWant me to solve a specific equation for you? 📝";
+            }
+            if (lower.includes('code') || lower.includes('python')) {
+                return "💻 **Programming Explained Step-by-Step**\n\n1️⃣ **Plan**: What should your program do? Write pseudocode.\n2️⃣ **Setup**: Import libraries, define variables.\n3️⃣ **Write logic**: Use loops, conditions, functions.\n4️⃣ **Test**: Run with sample inputs.\n5️⃣ **Debug**: Fix errors one by one.\n\n🎯 Example (Python):\n```python\n# Print numbers 1 to 5\nfor i in range(1, 6):\n    print(i)\n```\n**Explanation**: `range(1,6)` creates numbers 1-5, loop prints each.\n\nWhat code would you like me to explain? 👩‍💻";
+            }
+            if (lower.includes('science') || lower.includes('physics')) {
+                return "🔬 **Science Concept Breakdown**\n\n**Newton's First Law (Inertia)**\n- **Step 1**: An object at rest stays at rest.\n- **Step 2**: An object in motion stays in motion.\n- **Step 3**: Unless acted by an outside force.\n- **Real-life**: A seatbelt stops you when a car suddenly brakes!\n\n🧪 Would you like me to explain any specific science topic in detail?";
+            }
+            return "📚 **Let me teach you!**\n\nI can explain any topic in simple steps:\n• ✏️ **Math**: Algebra, Geometry, Calculus\n• 💻 **Coding**: Python, JavaScript, HTML\n• 🔬 **Science**: Physics, Chemistry, Biology\n• 📖 **English**: Grammar, Essays, Vocabulary\n• 🎯 **Study Tips**: Memory tricks, exam prep\n\n**Just type your question**, and I'll give you a complete step-by-step explanation with examples! 🎓\n\nWhat would you like to learn today?";
         }
         
         // Helper functions
@@ -159,16 +159,8 @@
             setTimeout(() => toast.remove(), 3000);
         }
         
-        function formatDate(date) { 
-            return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }); 
-        }
-        
-        function escapeHtml(text) { 
-            if(!text) return ''; 
-            const div = document.createElement('div'); 
-            div.textContent = text; 
-            return div.innerHTML; 
-        }
+        function formatDate(date) { return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }); }
+        function escapeHtml(text) { if(!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
         
         function renderMarkdown(content) {
             if(typeof marked === 'undefined') return escapeHtml(content);
@@ -176,56 +168,37 @@
                 return marked.parse(content, { 
                     breaks: true, 
                     highlight: function(code, lang) { 
-                        if(lang && hljs.getLanguage(lang)) 
-                            return hljs.highlight(code, { language: lang }).value; 
+                        if(lang && hljs.getLanguage(lang)) return hljs.highlight(code, { language: lang }).value; 
                         return hljs.highlightAuto(code).value; 
                     } 
                 });
             } catch(e) { return escapeHtml(content); }
         }
         
-        function scrollToBottom() { 
-            setTimeout(() => { 
-                const container = document.getElementById('chat-messages-container'); 
-                if(container) container.scrollTop = container.scrollHeight; 
-            }, 100); 
-        }
+        function scrollToBottom() { setTimeout(() => { const container = document.getElementById('chat-messages-container'); if(container) container.scrollTop = container.scrollHeight; }, 100); }
         
-        // Voice input
         function startVoiceInput(onResult) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { showToast("Voice not supported", 'error'); return null; }
             const recognition = new SpeechRecognition();
-            recognition.continuous = false; 
-            recognition.interimResults = false; 
-            recognition.lang = 'en-US';
-            recognition.onresult = (event) => { 
-                const text = event.results[0][0].transcript; 
-                if(onResult) onResult(text); 
-            };
-            recognition.onerror = () => showToast("Speech error", 'error');
+            recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+            recognition.onresult = (event) => { const text = event.results[0][0].transcript; if(onResult) onResult(text); };
+            recognition.onerror = () => showToast("Please speak clearly", 'error');
             recognition.start();
             return recognition;
         }
         
-        function speakText(text) { 
-            if(window.currentUtterance) window.speechSynthesis.cancel(); 
-            const utterance = new SpeechSynthesisUtterance(text); 
-            utterance.rate = 0.9; 
-            window.currentUtterance = utterance; 
-            window.speechSynthesis.speak(utterance); 
-        }
-        
-        // ========== FIREBASE: PER-USER ISOLATED STORAGE ==========
+        // ========== FIREBASE: PER-USER ISOLATED STORAGE (Each user has their own path) ==========
         async function saveUserToDatabase(user) {
             try {
-                const userRef = database.ref(`users/${user.uid}`);
+                const userRef = database.ref(`sbt_school_users/${user.uid}`);
                 const snapshot = await userRef.once('value');
                 if(!snapshot.exists()) {
                     await userRef.set({ 
                         email: user.email, 
                         displayName: user.displayName || user.email.split('@')[0], 
-                        createdAt: new Date().toISOString() 
+                        createdAt: new Date().toISOString(),
+                        school: "SBT Public School"
                     });
                 }
                 return true;
@@ -234,9 +207,10 @@
         
         async function saveMessageToFirebase(userId, sessionId, message) {
             try {
-                const messageRef = database.ref(`users/${userId}/chatMessages/${sessionId}`).push();
+                // Each user has completely separate path: sbt_school_users/{userId}/chatMessages/{sessionId}
+                const messageRef = database.ref(`sbt_school_users/${userId}/chatMessages/${sessionId}`).push();
                 await messageRef.set({ ...message, timestamp: new Date().toISOString() });
-                const sessionRef = database.ref(`users/${userId}/chatSessions/${sessionId}`);
+                const sessionRef = database.ref(`sbt_school_users/${userId}/chatSessions/${sessionId}`);
                 const snap = await sessionRef.once('get');
                 if(snap.exists()) {
                     const curr = snap.val();
@@ -248,7 +222,7 @@
         
         async function createNewSession(userId, title, firstMessage) {
             try {
-                const sessionsRef = database.ref(`users/${userId}/chatSessions`);
+                const sessionsRef = database.ref(`sbt_school_users/${userId}/chatSessions`);
                 const newSessionRef = sessionsRef.push();
                 const sessionId = newSessionRef.key;
                 const timestamp = new Date().toISOString();
@@ -266,7 +240,7 @@
         
         async function loadUserSessions(userId) {
             try {
-                const snapshot = await database.ref(`users/${userId}/chatSessions`).once('value');
+                const snapshot = await database.ref(`sbt_school_users/${userId}/chatSessions`).once('value');
                 if(snapshot.exists()) {
                     const sessionsData = snapshot.val();
                     const sessionsList = Object.values(sessionsData).sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -279,7 +253,7 @@
         
         async function loadSessionMessages(userId, sessionId) {
             try {
-                const snapshot = await database.ref(`users/${userId}/chatMessages/${sessionId}`).once('value');
+                const snapshot = await database.ref(`sbt_school_users/${userId}/chatMessages/${sessionId}`).once('value');
                 if(snapshot.exists()) {
                     const messagesData = snapshot.val();
                     const messagesList = Object.values(messagesData);
@@ -293,29 +267,29 @@
         
         async function deleteSessionFromFirebase(userId, sessionId) {
             try {
-                await database.ref(`users/${userId}/chatSessions/${sessionId}`).remove();
-                await database.ref(`users/${userId}/chatMessages/${sessionId}`).remove();
+                await database.ref(`sbt_school_users/${userId}/chatSessions/${sessionId}`).remove();
+                await database.ref(`sbt_school_users/${userId}/chatMessages/${sessionId}`).remove();
                 if(window.currentSessionId === sessionId) { 
                     window.messages = []; 
                     window.currentSessionId = null; 
                     renderChatMessages(); 
                 }
                 await loadUserSessions(userId);
-                showToast("Chat history deleted permanently");
+                showToast("Chat history deleted successfully");
             } catch(e) { showToast("Delete failed", 'error'); }
         }
         
         async function updateSessionTitle(userId, sessionId, firstUserMessage) {
             if(!firstUserMessage) return;
             const shortTitle = firstUserMessage.length > 40 ? firstUserMessage.substring(0, 40) + "..." : firstUserMessage;
-            const sessionRef = database.ref(`users/${userId}/chatSessions/${sessionId}`);
+            const sessionRef = database.ref(`sbt_school_users/${userId}/chatSessions/${sessionId}`);
             await sessionRef.update({ title: shortTitle });
             await loadUserSessions(userId);
         }
         
-        // ========== SEND MESSAGE CORE ==========
+        // ========== SEND MESSAGE ==========
         window.sendMessage = async function(content) {
-            if(!window.currentUser) { showToast("Please login", 'error'); return; }
+            if(!window.currentUser) { showToast("Please login first", 'error'); return; }
             if(window.isGenerating) return;
             if(!content.trim()) return;
             
@@ -339,10 +313,8 @@
             
             window.isGenerating = true;
             renderTypingIndicator(true);
-            
             const history = window.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
             const aiResponse = await generateAIResponse(content, history);
-            
             renderTypingIndicator(false);
             
             const aiMessage = { role: 'assistant', content: aiResponse };
@@ -365,7 +337,7 @@
                     indicator = document.createElement('div');
                     indicator.id = 'typing-indicator';
                     indicator.className = 'flex justify-start mb-4 message-enter';
-                    indicator.innerHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-5 py-3"><div class="flex gap-1.5"><div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div><div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div><div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div></div><span class="text-xs text-gray-500 mt-1 block">AI is thinking...</span></div>`;
+                    indicator.innerHTML = `<div class="bg-amber-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-5 py-3"><div class="flex gap-1.5"><div class="typing-dot w-2 h-2 bg-amber-500 rounded-full"></div><div class="typing-dot w-2 h-2 bg-amber-500 rounded-full"></div><div class="typing-dot w-2 h-2 bg-amber-500 rounded-full"></div></div><span class="text-xs text-gray-500 mt-1 block">SBT Tutor is thinking...</span></div>`;
                     container.appendChild(indicator);
                     scrollToBottom();
                 }
@@ -376,14 +348,14 @@
             const container = document.getElementById('chat-messages-container');
             if(!container) return;
             if(!window.messages || window.messages.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 px-4 py-12"><div class="w-28 h-28 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl"><i class="fas fa-graduation-cap text-white text-5xl"></i></div><h2 class="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Study Assistant</h2><p class="text-lg mb-6">Your private tutor — chat history is yours alone, secured by email login</p><div class="flex flex-wrap gap-2 justify-center"><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">📚 Explain concepts</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">💻 Help with code</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">🔢 Solve math</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">📖 Study tips</span></div></div>`;
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-gray-600 dark:text-gray-400 px-4 py-12"><div class="w-28 h-28 school-badge rounded-3xl flex items-center justify-center mb-6 shadow-xl"><i class="fas fa-chalkboard-user text-white text-5xl"></i></div><h2 class="text-3xl font-bold mb-3 text-blue-800 dark:text-blue-300">SBT Public School</h2><p class="text-lg mb-3">✨ AI Study Assistant ✨</p><p class="text-md mb-6">Step-by-step explanations • Cute voice • Private chat history</p><div class="flex flex-wrap gap-2 justify-center max-w-md"><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">📐 Math Solutions</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">💻 Code Explained</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">🔬 Science Lessons</span><span class="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm shadow-sm">🎯 Exam Tips</span></div><p class="text-sm mt-8 text-gray-400">Ask any question — I'll explain step by step! 🎓</p></div>`;
                 return;
             }
             let html = '<div class="max-w-4xl mx-auto">';
             for(let msg of window.messages) {
                 const isUser = msg.role === 'user';
                 const renderedContent = isUser ? escapeHtml(msg.content) : renderMarkdown(msg.content);
-                html += `<div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 message-enter"><div class="max-w-[85%] ${isUser ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-md'} px-4 py-3">${!isUser ? `<div class="flex items-center gap-2 mb-2"><i class="fas fa-robot text-blue-500 text-sm"></i><span class="text-xs font-semibold text-blue-600 dark:text-blue-400">AI Study Assistant</span></div>` : ''}<div class="prose prose-sm dark:prose-invert max-w-none chat-bubble ${isUser ? 'text-white' : ''}">${renderedContent}</div><div class="flex items-center justify-end gap-3 mt-2 opacity-70 hover:opacity-100 transition"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-xs"><i class="far fa-copy"></i></button>${!isUser ? `<button onclick="window.speakText(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-xs"><i class="fas fa-volume-up"></i></button>` : ''}</div></div></div>`;
+                html += `<div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 message-enter"><div class="max-w-[85%] ${isUser ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-sm shadow-md border-l-4 border-amber-400'} px-4 py-3">${!isUser ? `<div class="flex items-center gap-2 mb-2"><i class="fas fa-robot text-amber-500 text-sm"></i><span class="text-xs font-semibold text-amber-600 dark:text-amber-400">SBT Public School AI Tutor</span></div>` : ''}<div class="prose prose-sm dark:prose-invert max-w-none chat-bubble ${isUser ? 'text-white' : ''}">${renderedContent}</div><div class="flex items-center justify-end gap-3 mt-2 opacity-70 hover:opacity-100 transition"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-xs"><i class="far fa-copy"></i></button>${!isUser ? `<button onclick="window.speakCute(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-xs cute-voice-btn"><i class="fas fa-volume-up text-pink-500"></i> 🎤 Cute Voice</button>` : ''}</div></div></div>`;
             }
             html += '</div>';
             container.innerHTML = html;
@@ -391,20 +363,20 @@
             scrollToBottom();
         }
         
-        window.copyToClipboard = function(text) { navigator.clipboard.writeText(text); showToast("Copied!"); };
-        window.speakText = speakText;
+        window.copyToClipboard = function(text) { navigator.clipboard.writeText(text); showToast("Copied to clipboard!"); };
+        window.speakCute = function(text) { speakWithCuteVoice(text); };
         
         function renderSidebar() {
             const sidebar = document.getElementById('sidebar-content');
             if(!sidebar) return;
             if(!window.sessions || window.sessions.length === 0) {
-                sidebar.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 py-12"><i class="fas fa-comments text-4xl mb-3 opacity-50"></i><p class="text-sm">No chats yet</p><p class="text-xs mt-1">Your history is private — only you can see it</p></div>`;
+                sidebar.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 py-12"><i class="fas fa-history text-4xl mb-3 opacity-50"></i><p class="text-sm">No chat history yet</p><p class="text-xs mt-1">Your chats are private to your account</p></div>`;
                 return;
             }
             sidebar.innerHTML = window.sessions.map(session => `
-                <div onclick="window.loadSession('${session.id}')" class="group p-3 rounded-lg cursor-pointer transition-all hover:bg-gray-100 dark:hover:bg-gray-800 ${window.currentSessionId === session.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''}">
+                <div onclick="window.loadSession('${session.id}')" class="group p-3 rounded-lg cursor-pointer transition-all hover:bg-amber-50 dark:hover:bg-gray-800 ${window.currentSessionId === session.id ? 'bg-amber-100 dark:bg-amber-900/20 border-l-4 border-amber-500' : ''}">
                     <div class="flex items-start justify-between">
-                        <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-800 dark:text-white truncate">${escapeHtml(session.title || 'Chat')}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${formatDate(session.updatedAt)}</p></div>
+                        <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-800 dark:text-white truncate">📝 ${escapeHtml(session.title || 'Conversation')}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${formatDate(session.updatedAt)}</p></div>
                         <button onclick="event.stopPropagation(); window.deleteSession('${session.id}')" class="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 transition"><i class="fas fa-trash-alt text-red-500 text-xs"></i></button>
                     </div>
                 </div>
@@ -421,7 +393,7 @@
         };
         
         window.deleteSession = async (sessionId) => {
-            if(window.currentUser && confirm('Delete this chat history? It will be removed permanently from your account.')) {
+            if(window.currentUser && confirm('Delete this chat history? It will be removed from your private account.')) {
                 await deleteSessionFromFirebase(window.currentUser.uid, sessionId);
             }
         };
@@ -456,10 +428,10 @@
             renderChatMessages();
         }
         
-        // ========== AUTHENTICATION UI ==========
+        // ========== AUTH UI ==========
         function renderAuthScreen() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4"><div class="w-full max-w-md"><div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20"><div class="text-center mb-8"><div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-5"><i class="fas fa-graduation-cap text-white text-4xl"></i></div><h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">AI Study Assistant</h1><p class="text-gray-500 dark:text-gray-400">Private & Secure — Each email has isolated history</p></div><div id="auth-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition mb-4"><i class="fab fa-google text-red-500"></i><span>Continue with Google</span></button><div class="relative my-6"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white dark:bg-slate-800 text-gray-500">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email Address" class="w-full px-4 py-3 mb-3 bg-gray-50 dark:bg-slate-700 border rounded-xl focus:ring-2 focus:ring-blue-500" required><input type="password" id="login-password" placeholder="Password" class="w-full px-4 py-3 mb-4 bg-gray-50 dark:bg-slate-700 border rounded-xl focus:ring-2 focus:ring-blue-500" required><button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold">Sign In</button></form><p class="text-center text-sm text-gray-600 mt-6">Don't have an account? <a href="#" onclick="window.showSignup()" class="text-blue-600 font-semibold">Create Account</a></p></div></div></div>`;
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4"><div class="w-full max-w-md"><div class="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-amber-200 dark:border-slate-700"><div class="text-center mb-8"><div class="w-24 h-24 school-badge rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg"><i class="fas fa-school text-white text-4xl"></i></div><h1 class="text-3xl font-bold text-blue-800 dark:text-white mb-2">SBT Public School</h1><p class="text-amber-600 dark:text-amber-400 font-semibold">✨ AI Study Assistant ✨</p><p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Step-by-step learning • Private history • Cute voice</p></div><div id="auth-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition mb-4 font-medium"><i class="fab fa-google text-red-500"></i><span>Continue with Google</span></button><div class="relative my-6"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white dark:bg-slate-800 text-gray-500">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email Address" class="w-full px-4 py-3 mb-3 bg-gray-50 dark:bg-slate-700 border rounded-xl focus:ring-2 focus:ring-amber-500" required><input type="password" id="login-password" placeholder="Password" class="w-full px-4 py-3 mb-4 bg-gray-50 dark:bg-slate-700 border rounded-xl focus:ring-2 focus:ring-amber-500" required><button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition">Sign In</button></form><p class="text-center text-sm text-gray-600 mt-6">Don't have an account? <a href="#" onclick="window.showSignup()" class="text-amber-600 font-semibold">Create Account</a></p></div></div></div>`;
             document.getElementById('email-login-form').addEventListener('submit', async(e) => {
                 e.preventDefault();
                 const email = document.getElementById('login-email').value;
@@ -472,7 +444,7 @@
         
         window.showSignup = function() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4"><div class="w-full max-w-md"><div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl p-8"><div class="text-center mb-8"><div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-5"><i class="fas fa-user-plus text-white text-4xl"></i></div><h1 class="text-3xl font-bold text-gray-800 dark:text-white">Create Account</h1><p class="text-gray-500">Your private study space — history never shared</p></div><div id="auth-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 border rounded-xl hover:bg-gray-50 mb-4"><i class="fab fa-google text-red-500"></i>Google</button><div class="relative my-6"><div class="border-t"></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white dark:bg-slate-800">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full Name" class="w-full px-4 py-3 mb-3 bg-gray-50 border rounded-xl" required><input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-3 mb-3 bg-gray-50 border rounded-xl" required><input type="password" id="signup-password" placeholder="Password (min 6)" class="w-full px-4 py-3 mb-4 bg-gray-50 border rounded-xl" required><button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-semibold">Sign Up</button></form><p class="text-center text-sm mt-6">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-blue-600 font-semibold">Sign In</a></p></div></div></div>`;
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4"><div class="w-full max-w-md"><div class="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl p-8"><div class="text-center mb-8"><div class="w-24 h-24 school-badge rounded-2xl flex items-center justify-center mx-auto mb-5"><i class="fas fa-user-graduate text-white text-4xl"></i></div><h1 class="text-3xl font-bold text-blue-800 dark:text-white">Join SBT Public School</h1><p class="text-amber-600">Start your AI learning journey</p></div><div id="auth-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 border rounded-xl hover:bg-gray-50 mb-4"><i class="fab fa-google text-red-500"></i>Google</button><div class="relative my-6"><div class="border-t"></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white dark:bg-slate-800">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full Name" class="w-full px-4 py-3 mb-3 bg-gray-50 border rounded-xl" required><input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-3 mb-3 bg-gray-50 border rounded-xl" required><input type="password" id="signup-password" placeholder="Password (min 6)" class="w-full px-4 py-3 mb-4 bg-gray-50 border rounded-xl" required><button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-semibold">Sign Up</button></form><p class="text-center text-sm mt-6">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-amber-600 font-semibold">Sign In</a></p></div></div></div>`;
             document.getElementById('signup-form').addEventListener('submit', async(e) => {
                 e.preventDefault();
                 const name = document.getElementById('signup-name').value;
@@ -499,7 +471,7 @@
         // ========== MAIN CHAT UI ==========
         function renderChatUI() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div><div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div><div id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl z-50 hidden flex flex-col"><div class="p-4 border-b flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center"><i class="fas fa-graduation-cap text-white text-sm"></i></div><span class="font-bold">Study Assistant</span></div><button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100 md:hidden"><i class="fas fa-times"></i></button></div><div class="p-4 border-b"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">${window.currentUser?.displayName?.[0] || window.currentUser?.email?.[0]?.toUpperCase() || 'U'}</div><div class="flex-1"><p class="font-medium truncate">${escapeHtml(window.currentUser?.displayName || window.currentUser?.email?.split('@')[0])}</p><p class="text-xs text-gray-500 truncate">${window.currentUser?.email}</p></div></div></div><div class="p-4"><button onclick="window.newChat()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2.5 rounded-xl font-medium flex items-center justify-center gap-2"><i class="fas fa-plus"></i> New Chat</button></div><div id="sidebar-content" class="flex-1 overflow-y-auto px-2"></div><div class="p-4 border-t space-y-2"><button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'}"></i><span>${window.darkMode ? 'Light Mode' : 'Dark Mode'}</span></button><button onclick="firebase.auth().signOut()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button></div></div><div class="flex flex-col h-screen"><div class="glass px-4 py-3 flex items-center gap-3 sticky top-0 z-30"><button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100"><i class="fas fa-bars text-gray-700 dark:text-gray-300 text-xl"></i></button><div class="flex items-center gap-2"><div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center"><i class="fas fa-graduation-cap text-white text-sm"></i></div><h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Study Assistant</h1></div><div class="ml-auto text-xs text-gray-500"><i class="fas fa-lock text-green-500 mr-1"></i> Private History (Email-isolated)</div></div><div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 chat-scroll"></div><div class="p-4 glass border-t"><div class="flex gap-2"><textarea id="message-input" rows="1" placeholder="Ask me anything... (Your chats are private to your email account)" class="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border rounded-xl focus:ring-2 focus:ring-blue-500 resize-none" style="min-height: 50px;"></textarea><button id="voice-btn" class="px-4 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200"><i class="fas fa-microphone text-gray-600"></i></button><button id="send-btn" class="px-5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white"><i class="fas fa-paper-plane text-lg"></i></button></div></div></div></div>`;
+            app.innerHTML = `<div><div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div><div id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl z-50 hidden flex flex-col"><div class="p-4 border-b flex items-center justify-between school-badge text-white"><div class="flex items-center gap-2"><i class="fas fa-school text-white"></i><span class="font-bold">SBT Public School</span></div><button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-white/20 md:hidden"><i class="fas fa-times text-white"></i></button></div><div class="p-4 border-b bg-amber-50 dark:bg-slate-800"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg">${window.currentUser?.displayName?.[0] || window.currentUser?.email?.[0]?.toUpperCase() || 'U'}</div><div class="flex-1"><p class="font-medium truncate">${escapeHtml(window.currentUser?.displayName || window.currentUser?.email?.split('@')[0])}</p><p class="text-xs text-gray-500 truncate">${window.currentUser?.email}</p></div></div></div><div class="p-4"><button onclick="window.newChat()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 hover:from-amber-600 transition"><i class="fas fa-plus"></i> New Conversation</button></div><div id="sidebar-content" class="flex-1 overflow-y-auto px-2"></div><div class="p-4 border-t space-y-2"><button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'}"></i><span>${window.darkMode ? 'Light Mode' : 'Dark Mode'}</span></button><button onclick="firebase.auth().signOut()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button></div></div><div class="flex flex-col h-screen"><div class="glass px-4 py-3 flex items-center gap-3 sticky top-0 z-30 shadow-sm"><button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100"><i class="fas fa-bars text-amber-700 text-xl"></i></button><div class="flex items-center gap-2"><div class="w-8 h-8 school-badge rounded-lg flex items-center justify-center"><i class="fas fa-chalkboard-user text-white text-sm"></i></div><h1 class="text-xl font-bold text-blue-800 dark:text-white">SBT Public School</h1></div><div class="ml-auto text-xs bg-amber-100 dark:bg-amber-900/40 px-3 py-1 rounded-full text-amber-700"><i class="fas fa-robot mr-1"></i> AI Tutor • Step-by-Step</div></div><div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 chat-scroll"></div><div class="p-4 glass border-t"><div class="flex gap-2"><textarea id="message-input" rows="1" placeholder="Ask me any question... I'll explain step by step with cute voice! 🎤" class="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-amber-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 resize-none" style="min-height: 50px;"></textarea><button id="voice-btn" class="px-4 rounded-xl bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 transition"><i class="fas fa-microphone text-amber-600 text-lg"></i></button><button id="send-btn" class="px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 transition"><i class="fas fa-paper-plane text-lg"></i></button></div><p class="text-xs text-center text-gray-400 mt-2">🔒 Your chat history is private to your email account</p></div></div></div>`;
             renderChatMessages();
             loadUserSessions(window.currentUser.uid);
             const sendBtn = document.getElementById('send-btn');
@@ -507,10 +479,10 @@
             const voiceBtn = document.getElementById('voice-btn');
             sendBtn.onclick = () => { const text = messageInput.value.trim(); if(text) { messageInput.value = ''; window.sendMessage(text); } };
             messageInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); } };
-            voiceBtn.onclick = () => { const origIcon = voiceBtn.innerHTML; voiceBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-red-500"></i>'; const recog = startVoiceInput((text) => { messageInput.value = text; window.sendMessage(text); voiceBtn.innerHTML = origIcon; }); setTimeout(() => { if(recog) recog.abort(); voiceBtn.innerHTML = origIcon; }, 10000); };
+            voiceBtn.onclick = () => { const origIcon = voiceBtn.innerHTML; voiceBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-amber-600"></i>'; const recog = startVoiceInput((text) => { messageInput.value = text; window.sendMessage(text); voiceBtn.innerHTML = origIcon; }); setTimeout(() => { if(recog) recog.abort(); voiceBtn.innerHTML = origIcon; }, 10000); };
         }
         
-        // Initialize application state
+        // Initialize app
         window.messages = [];
         window.sessions = [];
         window.currentSessionId = null;
@@ -523,6 +495,9 @@
             if(user) { await saveUserToDatabase(user); renderChatUI(); }
             else { renderAuthScreen(); }
         });
+        
+        // Load voices for cute voice
+        window.speechSynthesis.getVoices();
     </script>
 </body>
     </html>
