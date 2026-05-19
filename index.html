@@ -4,19 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>SBT Public School | AI Study Assistant</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
-    <!-- Marked.js for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Highlight.js for code syntax -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
@@ -33,12 +27,18 @@
         @keyframes typingPulse { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
         .chat-bubble { word-break: break-word; line-height: 1.5; }
         pre { border-radius: 0.5rem; overflow-x: auto; padding: 0.75rem; margin: 0.5rem 0; background: #1e1e2f !important; font-size: 0.75rem; }
-        code { font-family: 'Courier New', monospace; font-size: 0.75rem; }
         .toast-show { animation: slideUp 0.2s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { background: #ffffff; }
         .dark body { background: #1e1e2f; }
-        input, textarea { outline: none; }
+        .user-avatar { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .three-dot-btn { transition: all 0.2s ease; }
+        .three-dot-btn:hover { background: #f3f4f6; }
+        .dark .three-dot-btn:hover { background: #374151; }
+        .dropdown-menu { animation: dropdownFade 0.15s ease-out; }
+        @keyframes dropdownFade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .voice-btn-active { animation: voicePulse 1s infinite; }
+        @keyframes voicePulse { 0% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.6; } }
     </style>
 </head>
 <body class="bg-white dark:bg-[#1e1e2f] transition-colors duration-200">
@@ -61,96 +61,329 @@
         const database = firebase.database();
 
         // ============================================
-        // NEW GEMINI API KEY (Provided by user)
+        // OPENROUTER API KEY - WORKING CONFIGURATION
         // ============================================
-        const GEMINI_API_KEY = "AIzaSyAA32bay5tOIsjQjm0cednmvRoOaOXa6mE";
-        const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+        const OPENROUTER_API_KEY = "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";
+        const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
         
-        // Smooth voice function
-        function speakWithCuteVoice(text) {
-            if (window.currentUtterance) window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
-            utterance.pitch = 1.15;
-            utterance.volume = 1;
-            utterance.lang = 'en-US';
-            const voices = window.speechSynthesis.getVoices();
-            const preferredVoice = voices.find(v => v.name.includes('Google UK English Female') || v.name.includes('Samantha'));
-            if (preferredVoice) utterance.voice = preferredVoice;
-            window.currentUtterance = utterance;
-            window.speechSynthesis.speak(utterance);
-        }
+        let isRequestInProgress = false;
+        let pendingRequests = [];
+        let currentlyPlayingMessageId = null;
+        let currentUtterance = null;
         
-        // AI Response Generator with step-by-step explanations
-        async function generateAIResponse(userMessage, history = []) {
+        // ============================================
+        // AI RESPONSE FUNCTION - FIXED
+        // ============================================
+        async function getAIResponse(userMessage, history = []) {
             try {
-                const conversationParts = [];
-                const systemInstruction = `You are "SBT Public School AI Tutor" - a warm, patient teacher for students. IMPORTANT RULES:
-- Explain EVERY topic STEP-BY-STEP like teaching a 10th grade student
-- Use simple language, emojis occasionally, be encouraging
-- For math: show formula → substitution → calculation → answer
-- For coding: show code → explain each line → output
-- For science: concept → real-life example → how it works
-- Keep responses clear and organized (2-4 paragraphs or bullet points)
-- End with a friendly follow-up question like "Would you like me to explain more?"`;
+                console.log("Sending request to OpenRouter...", userMessage);
                 
-                conversationParts.push({ text: systemInstruction });
+                // Build messages array
+                const messages = [
+                    {
+                        role: "system",
+                        content: `You are "SBT Public School AI Tutor" - a warm, patient teacher for students.
+
+RULES:
+- Explain EVERY topic STEP-BY-STEP like teaching a 10th grade student
+- Use simple language and emojis 😊
+- For math: show formula → substitute → calculate → answer
+- For coding: show code → explain each line → output
+- Keep responses clear (2-4 paragraphs)
+- End with a friendly follow-up question`
+                    },
+                    {
+                        role: "user",
+                        content: userMessage
+                    }
+                ];
+                
+                // Add conversation history
                 if (history && history.length > 0) {
                     const recentHistory = history.slice(-6);
                     for (const msg of recentHistory) {
-                        conversationParts.push({ text: msg.content });
+                        messages.push({
+                            role: msg.role === 'user' ? 'user' : 'assistant',
+                            content: msg.content
+                        });
                     }
                 }
-                conversationParts.push({ text: `Student: ${userMessage}\n\nSBT Tutor (give step-by-step explanation):` });
                 
                 const requestBody = {
-                    contents: [{ parts: conversationParts }],
-                    generationConfig: { temperature: 0.7, maxOutputTokens: 1000, topP: 0.95 }
+                    model: "google/gemini-2.0-flash-lite-001",
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 1000,
+                    top_p: 0.95
                 };
                 
-                const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                
+                const response = await fetch(OPENROUTER_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'HTTP-Referer': 'https://sbt-public-school.edu',
+                        'X-Title': 'SBT AI Study Assistant'
+                    },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error("Gemini API error:", response.status, errorText);
+                    console.error("API Error:", response.status, errorText);
                     throw new Error(`API error: ${response.status}`);
                 }
+                
                 const data = await response.json();
-                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-                    return data.candidates[0].content.parts[0].text || getFallbackResponse(userMessage);
+                console.log("API Response:", data);
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const aiResponse = data.choices[0].message.content;
+                    if (aiResponse && aiResponse.length > 0) {
+                        return aiResponse;
+                    }
                 }
+                
                 return getFallbackResponse(userMessage);
+                
             } catch(error) {
-                console.error("Gemini error:", error);
+                console.error("OpenRouter error:", error);
                 return getFallbackResponse(userMessage);
             }
         }
         
+        // Fallback responses (always works)
         function getFallbackResponse(userMessage) {
             const lower = userMessage.toLowerCase();
+            
+            if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+                return `👋 **Hello! Welcome to SBT Public School AI Tutor!**
+
+I'm here to help you learn anything step by step. What would you like to study today?
+
+📚 **I can help with:**
+• Mathematics (Algebra, Calculus, Geometry)
+• Programming (Python, JavaScript, HTML/CSS)
+• Science (Physics, Chemistry, Biology)
+• English & Writing
+• Exam preparation & study tips
+
+**Just type your question!** 🎓`;
+            }
+            
             if (lower.includes('math') || lower.includes('solve') || lower.includes('equation')) {
-                return "📐 **Step-by-Step Math Solution**\n\n1️⃣ **Understand the problem**: Write what's given and what to find\n2️⃣ **Choose the right formula**: Select the equation that connects values\n3️⃣ **Substitute numbers**: Plug in the known values\n4️⃣ **Calculate carefully**: Solve one operation at a time\n5️⃣ **Verify your answer**: Check if it makes sense\n\n💡 Example: Solve 2x + 5 = 15\n→ Subtract 5: 2x = 10\n→ Divide by 2: x = 5\n\nWant me to solve a specific problem for you? 📝";
+                return `📐 **Step-by-Step Math Solution**
+
+**Step 1**: Understand the problem - write down what's given and what we need to find
+
+**Step 2**: Choose the right formula or method
+
+**Step 3**: Substitute the values carefully
+
+**Step 4**: Calculate step by step (one operation at a time)
+
+**Step 5**: Verify your answer
+
+**Example**: Solve 2x + 5 = 15
+- Subtract 5 from both sides: 2x = 10
+- Divide both sides by 2: x = 5
+- Check: 2(5) + 5 = 10 + 5 = 15 ✅
+
+📝 **Would you like me to solve a specific math problem for you?**`;
             }
-            if (lower.includes('code') || lower.includes('python') || lower.includes('javascript')) {
-                return "💻 **Programming Explained Step-by-Step**\n\n1️⃣ **Plan**: What should your program do? Write pseudocode\n2️⃣ **Setup**: Import libraries, define variables\n3️⃣ **Write logic**: Use loops, conditions, functions\n4️⃣ **Test**: Run with sample inputs\n5️⃣ **Debug**: Fix errors one by one\n\n🎯 Example (Python):\n```python\n# Print numbers 1 to 5\nfor i in range(1, 6):\n    print(i)\n```\n**Explanation**: `range(1,6)` creates numbers 1,2,3,4,5. The loop prints each one.\n\nWhat code would you like me to explain? 👩‍💻";
+            
+            if (lower.includes('code') || lower.includes('python') || lower.includes('programming')) {
+                return `💻 **Programming Explained Step-by-Step**
+
+**Step 1**: Plan - What should your program do? Write pseudocode.
+
+**Step 2**: Setup - Import libraries, define variables.
+
+**Step 3**: Write the logic - Use loops, conditions, functions.
+
+**Step 4**: Test - Run with sample inputs.
+
+**Step 5**: Debug - Fix errors one by one.
+
+**Example (Python)**:
+\`\`\`python
+# Print numbers 1 to 5
+for i in range(1, 6):
+    print(i)
+\`\`\`
+
+**Output**:
+\`\`\`
+1
+2
+3
+4
+5
+\`\`\`
+
+**Explanation**: \`range(1,6)\` creates numbers 1,2,3,4,5. The loop runs 5 times and prints each number.
+
+👩‍💻 **What code would you like me to explain?**`;
             }
+            
             if (lower.includes('science') || lower.includes('physics') || lower.includes('chemistry')) {
-                return "🔬 **Science Concept Breakdown**\n\n**Newton's First Law (Inertia)**\n- **Step 1**: An object at rest stays at rest\n- **Step 2**: An object in motion stays in motion\n- **Step 3**: Unless acted by an outside force\n- **Real-life example**: A seatbelt stops you when a car suddenly brakes!\n\n🧪 Would you like me to explain any specific science topic in detail?";
+                return `🔬 **Science Concept Breakdown**
+
+**Newton's First Law of Motion (Inertia)**
+
+**Step 1**: An object at rest stays at rest
+**Step 2**: An object in motion stays in motion  
+**Step 3**: This continues UNLESS an outside force acts on it
+
+**Real-life example**: 
+- When a car suddenly stops, your body wants to keep moving forward - that's why we wear seatbelts!
+
+**Fun Fact**: A ball rolling on a frictionless surface would never stop!
+
+🧪 **Would you like me to explain any specific science topic in detail?**`;
             }
-            return "📚 **Hello! I'm your SBT AI Tutor**\n\nI can help you with:\n• ✏️ **Math** - Algebra, Geometry, Calculus (step-by-step)\n• 💻 **Coding** - Python, JavaScript, HTML, CSS\n• 🔬 **Science** - Physics, Chemistry, Biology\n• 📖 **English** - Grammar, Essays, Vocabulary\n• 🎯 **Study Tips** - Memory tricks, exam preparation\n\n**Just type your question**, and I'll give you a complete step-by-step explanation with examples! 🎓\n\nWhat would you like to learn today?";
+            
+            return `📚 **Welcome to SBT Public School AI Tutor!**
+
+I'm your personal AI teacher! I explain everything **step by step** - just like a real teacher.
+
+**What I can help you with:**
+
+• ✏️ **MATHEMATICS** - Algebra, Calculus, Geometry, Statistics
+• 💻 **PROGRAMMING** - Python, JavaScript, HTML, CSS, Java
+• 🔬 **SCIENCE** - Physics, Chemistry, Biology
+• 📖 **ENGLISH** - Grammar, Essay Writing, Vocabulary
+• 🎯 **STUDY TIPS** - Memory techniques, Exam preparation
+
+**How I teach:**
+1️⃣ You ask a question
+2️⃣ I explain step by step with examples
+3️⃣ I make sure you understand
+4️⃣ I give practice problems
+
+**Just type your question below and I'll explain it clearly!** 🎓
+
+Example questions:
+- "Solve 3x + 7 = 22"
+- "Explain how a function works in Python"
+- "What is photosynthesis?"`;
+        }
+        
+        // Queue system for requests
+        async function queueAIRequest(userMessage, history) {
+            return new Promise((resolve, reject) => {
+                pendingRequests.push({ userMessage, history, resolve, reject });
+                processQueue();
+            });
+        }
+        
+        async function processQueue() {
+            if (isRequestInProgress || pendingRequests.length === 0) return;
+            isRequestInProgress = true;
+            const request = pendingRequests.shift();
+            try {
+                const response = await getAIResponse(request.userMessage, request.history);
+                request.resolve(response);
+            } catch(error) {
+                request.reject(error);
+            } finally {
+                isRequestInProgress = false;
+                setTimeout(() => processQueue(), 500);
+            }
+        }
+        
+        // Voice functions
+        function stopCurrentVoice() {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+            if (currentlyPlayingMessageId) {
+                const prevBtn = document.querySelector(`.voice-btn[data-message-id="${currentlyPlayingMessageId}"]`);
+                if (prevBtn) {
+                    prevBtn.innerHTML = '<i class="fas fa-volume-up text-xs"></i>';
+                    prevBtn.classList.remove('voice-btn-active', 'text-red-500');
+                    prevBtn.classList.add('text-gray-500', 'dark:text-gray-400');
+                }
+                currentlyPlayingMessageId = null;
+            }
+            currentUtterance = null;
+        }
+        
+        function speakMessage(messageId, text) {
+            stopCurrentVoice();
+            
+            let cleanText = text.replace(/\*\*/g, '').replace(/`/g, '').replace(/#/g, '');
+            cleanText = cleanText.replace(/[\[\(].*?[\]\)]/g, '');
+            
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            utterance.volume = 1;
+            utterance.lang = 'en-US';
+            
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.name.includes('Google UK English Female') || v.name.includes('Samantha'));
+            if (preferredVoice) utterance.voice = preferredVoice;
+            
+            utterance.onstart = () => {
+                currentlyPlayingMessageId = messageId;
+                const btn = document.querySelector(`.voice-btn[data-message-id="${messageId}"]`);
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-stop text-xs"></i>';
+                    btn.classList.remove('text-gray-500');
+                    btn.classList.add('voice-btn-active', 'text-red-500');
+                }
+            };
+            
+            utterance.onend = () => {
+                if (currentlyPlayingMessageId === messageId) {
+                    const btn = document.querySelector(`.voice-btn[data-message-id="${messageId}"]`);
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-volume-up text-xs"></i>';
+                        btn.classList.remove('voice-btn-active', 'text-red-500');
+                        btn.classList.add('text-gray-500', 'dark:text-gray-400');
+                    }
+                    currentlyPlayingMessageId = null;
+                }
+            };
+            
+            utterance.onerror = () => {
+                if (currentlyPlayingMessageId === messageId) {
+                    const btn = document.querySelector(`.voice-btn[data-message-id="${messageId}"]`);
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-volume-up text-xs"></i>';
+                        btn.classList.remove('voice-btn-active', 'text-red-500');
+                        btn.classList.add('text-gray-500', 'dark:text-gray-400');
+                    }
+                    currentlyPlayingMessageId = null;
+                }
+            };
+            
+            currentUtterance = utterance;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        function toggleVoice(messageId, text) {
+            if (currentlyPlayingMessageId === messageId) {
+                stopCurrentVoice();
+            } else {
+                speakMessage(messageId, text);
+            }
         }
         
         // Helper functions
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white text-xs z-50 toast-show shadow-md ${type === 'error' ? 'bg-red-500' : 'bg-gray-800 dark:bg-gray-700'}`;
+            toast.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white text-xs z-50 toast-show shadow-md ${type === 'error' ? 'bg-red-500' : 'bg-gray-800'}`;
             toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-1 text-xs"></i>${message}`;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
+            setTimeout(() => toast.remove(), 2500);
         }
         
         function formatDate(date) { return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
@@ -169,7 +402,12 @@
             } catch(e) { return escapeHtml(content); }
         }
         
-        function scrollToBottom() { setTimeout(() => { const container = document.getElementById('chat-messages-container'); if(container) container.scrollTop = container.scrollHeight; }, 80); }
+        function scrollToBottom() { 
+            setTimeout(() => { 
+                const container = document.getElementById('chat-messages-container'); 
+                if(container) container.scrollTop = container.scrollHeight; 
+            }, 100); 
+        }
         
         function startVoiceInput(onResult) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -177,18 +415,23 @@
             const recognition = new SpeechRecognition();
             recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
             recognition.onresult = (event) => { const text = event.results[0][0].transcript; if(onResult) onResult(text); };
-            recognition.onerror = () => showToast("Please speak clearly", 'error');
+            recognition.onerror = () => showToast("Speak clearly", 'error');
             recognition.start();
             return recognition;
         }
         
-        // ========== FIREBASE: PER-USER ISOLATED STORAGE ==========
+        // ========== FIREBASE FUNCTIONS ==========
         async function saveUserToDatabase(user) {
             try {
                 const userRef = database.ref(`sbt_users/${user.uid}`);
                 const snapshot = await userRef.once('value');
                 if(!snapshot.exists()) {
-                    await userRef.set({ email: user.email, displayName: user.displayName || user.email.split('@')[0], createdAt: new Date().toISOString() });
+                    await userRef.set({ 
+                        email: user.email, 
+                        displayName: user.displayName || user.email.split('@')[0], 
+                        createdAt: new Date().toISOString(),
+                        photoURL: user.photoURL || null
+                    });
                 }
                 return true;
             } catch(e) { return false; }
@@ -265,13 +508,15 @@
         // ========== SEND MESSAGE ==========
         window.sendMessage = async function(content) {
             if(!window.currentUser) { showToast("Please login", 'error'); return; }
-            if(window.isGenerating) return;
+            if(window.isGenerating) { showToast("Please wait...", 'error'); return; }
             if(!content.trim()) return;
             
+            // Add user message
             const userMessage = { role: 'user', content: content.trim() };
             window.messages.push(userMessage);
             renderChatMessages();
             
+            // Create or get session
             let sessionId = window.currentSessionId;
             if(!sessionId) {
                 sessionId = await createNewSession(window.currentUser.uid, content.slice(0, 35), userMessage);
@@ -285,10 +530,13 @@
                 if(window.messages.length === 1) await updateSessionTitle(window.currentUser.uid, sessionId, content);
             }
             
+            // Get AI response
             window.isGenerating = true;
             renderTypingIndicator(true);
+            
             const history = window.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
-            const aiResponse = await generateAIResponse(content, history);
+            const aiResponse = await queueAIRequest(content, history);
+            
             renderTypingIndicator(false);
             
             const aiMessage = { role: 'assistant', content: aiResponse };
@@ -297,6 +545,7 @@
                 await saveMessageToFirebase(window.currentUser.uid, sessionId, aiMessage);
                 await loadUserSessions(window.currentUser.uid);
             }
+            
             window.isGenerating = false;
             renderChatMessages();
             scrollToBottom();
@@ -311,7 +560,7 @@
                     indicator = document.createElement('div');
                     indicator.id = 'typing-indicator';
                     indicator.className = 'flex justify-start mb-3 message-enter';
-                    indicator.innerHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2"><div class="flex gap-1"><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div></div></div>`;
+                    indicator.innerHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2"><div class="flex gap-1"><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div></div><span class="text-xs text-gray-500 ml-2">SBT Tutor is typing...</span></div>`;
                     container.appendChild(indicator);
                     scrollToBottom();
                 }
@@ -319,26 +568,44 @@
         }
         
         function renderChatMessages() {
-            const container = document.getElementById('chat-messages-container');
+            const container = document.getElementById('chat-messages-container');ŕ
             if(!container) return;
+            
             if(!window.messages || window.messages.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-4 py-8"><div class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-4 shadow-sm"><i class="fas fa-robot text-white text-2xl"></i></div><h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-1">SBT AI Tutor</h2><p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Step-by-step explanations • Private history</p><div class="flex flex-wrap gap-2 justify-center"><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">📐 Math</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">💻 Code</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">🔬 Science</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">📖 English</span></div><p class="text-xs text-gray-400 mt-6">Ask me any question — I'll explain step by step!</p></div>`;
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-4 py-8"><div class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-4 shadow-sm"><i class="fas fa-school text-white text-2xl"></i></div><h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-1">Welcome to SBT Public School</h2><p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Step-by-step explanations • Private & Secure</p><div class="flex flex-wrap gap-2 justify-center"><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">📐 Math</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">💻 Code</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">🔬 Science</span></div><p class="text-xs text-gray-400 mt-6">Ask any question — I'll explain step by step!</p></div>`;
                 return;
             }
+            
             let html = '<div class="max-w-3xl mx-auto px-2">';
-            for(let msg of window.messages) {
+            for(let i = 0; i < window.messages.length; i++) {
+                const msg = window.messages[i];
                 const isUser = msg.role === 'user';
+                const messageId = `msg_${Date.now()}_${i}`;
                 const renderedContent = isUser ? escapeHtml(msg.content) : renderMarkdown(msg.content);
-                html += `<div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-3 message-enter"><div class="max-w-[85%] ${isUser ? 'bg-blue-500 text-white rounded-2xl rounded-tr-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md'} px-3 py-2 text-sm">${!isUser ? `<div class="flex items-center gap-1.5 mb-1"><i class="fas fa-graduation-cap text-blue-500 text-xs"></i><span class="text-xs font-medium text-blue-600 dark:text-blue-400">SBT Tutor</span></div>` : ''}<div class="chat-bubble text-sm leading-relaxed">${renderedContent}</div><div class="flex items-center justify-end gap-2 mt-1.5 opacity-60"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[10px]"><i class="far fa-copy"></i></button>${!isUser ? `<button onclick="window.speakCute(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[10px]"><i class="fas fa-volume-up"></i> 🔊</button>` : ''}</div></div></div>`;
+                
+                if (isUser) {
+                    html += `<div class="flex justify-end mb-3 message-enter"><div class="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tr-md px-3 py-2 text-sm"><div class="chat-bubble text-sm leading-relaxed">${renderedContent}</div><div class="flex justify-end mt-1.5 opacity-60"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[10px] hover:opacity-100"><i class="far fa-copy"></i></button></div></div></div>`;
+                } else {
+                    html += `<div class="flex justify-start mb-3 message-enter"><div class="max-w-[85%] bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md px-3 py-2 text-sm"><div class="flex items-center gap-1.5 mb-1"><i class="fas fa-graduation-cap text-blue-500 text-xs"></i><span class="text-xs font-medium text-blue-600 dark:text-blue-400">SBT Tutor</span></div><div class="chat-bubble text-sm leading-relaxed">${renderedContent}</div><div class="flex items-center justify-end gap-2 mt-1.5 opacity-60"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[10px] hover:opacity-100"><i class="far fa-copy"></i></button><button class="voice-btn text-[10px] hover:opacity-100 text-gray-500 dark:text-gray-400" data-message-id="${messageId}" onclick="window.toggleVoiceMessage('${messageId}', \`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)"><i class="fas fa-volume-up text-xs"></i></button></div></div></div>`;
+                }
             }
             html += '</div>';
             container.innerHTML = html;
-            if(typeof hljs !== 'undefined') document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+            
+            if(typeof hljs !== 'undefined') {
+                document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+            }
             scrollToBottom();
         }
         
-        window.copyToClipboard = function(text) { navigator.clipboard.writeText(text); showToast("Copied!"); };
-        window.speakCute = function(text) { speakWithCuteVoice(text); };
+        window.copyToClipboard = function(text) { 
+            navigator.clipboard.writeText(text); 
+            showToast("Copied!"); 
+        };
+        
+        window.toggleVoiceMessage = function(messageId, text) {
+            toggleVoice(messageId, text);
+        };
         
         function renderSidebar() {
             const sidebar = document.getElementById('sidebar-content');
@@ -357,6 +624,7 @@
         
         window.loadSession = async (sessionId) => {
             if(window.currentUser) {
+                stopCurrentVoice();
                 await loadSessionMessages(window.currentUser.uid, sessionId);
                 renderSidebar();
                 if(window.innerWidth < 768) toggleSidebar();
@@ -365,12 +633,14 @@
         };
         
         window.deleteSession = async (sessionId) => {
-            if(window.currentUser && confirm('Delete this chat history?')) {
+            if(window.currentUser && confirm('Delete this chat?')) {
+                stopCurrentVoice();
                 await deleteSessionFromFirebase(window.currentUser.uid, sessionId);
             }
         };
         
         window.newChat = async () => {
+            stopCurrentVoice();
             window.messages = [];
             window.currentSessionId = null;
             renderChatMessages();
@@ -399,10 +669,57 @@
             renderChatMessages();
         }
         
-        // ========== AUTH UI ==========
+        // Profile dropdown
+        function toggleProfileDropdown() {
+            const dropdown = document.getElementById('profile-dropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        document.addEventListener('click', function closeDropdown(e) {
+                            if (!dropdown.contains(e.target) && !e.target.closest('.three-dot-btn')) {
+                                dropdown.classList.add('hidden');
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                        });
+                    }, 0);
+                }
+            }
+        }
+        
+        function updateUserProfileUI() {
+            const user = window.currentUser;
+            if (!user) return;
+            const displayName = user.displayName || user.email?.split('@')[0] || 'Student';
+            const email = user.email || '';
+            const initial = displayName.charAt(0).toUpperCase();
+            const photoURL = user.photoURL;
+            const createdAt = user.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Recently';
+            
+            const nameEl = document.getElementById('dropdown-user-name');
+            const emailEl = document.getElementById('dropdown-user-email');
+            const initialEl = document.getElementById('dropdown-user-initial');
+            const avatarImg = document.getElementById('dropdown-avatar-img');
+            const memberSpan = document.getElementById('member-since');
+            
+            if (nameEl) nameEl.textContent = displayName;
+            if (emailEl) emailEl.textContent = email;
+            if (memberSpan) memberSpan.textContent = `Member since ${createdAt}`;
+            
+            if (photoURL && avatarImg) {
+                avatarImg.src = photoURL;
+                avatarImg.classList.remove('hidden');
+                if (initialEl) initialEl.classList.add('hidden');
+            } else if (avatarImg) {
+                avatarImg.classList.add('hidden');
+                if (initialEl) { initialEl.textContent = initial; initialEl.classList.remove('hidden'); }
+            } else if (initialEl) { initialEl.textContent = initial; initialEl.classList.remove('hidden'); }
+        }
+        
+        // Auth UI
         function renderAuthScreen() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-6"><div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm"><i class="fas fa-robot text-white text-2xl"></i></div><h1 class="text-2xl font-bold text-gray-800 dark:text-white">SBT AI Tutor</h1><p class="text-sm text-gray-500 mt-1">Step-by-step learning • Private history</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm font-medium"><i class="fab fa-google text-red-500"></i>Continue with Google</button><div class="relative my-4"><div class="border-t border-gray-200 dark:border-gray-700"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-xs text-gray-400">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email address" class="w-full px-3 py-2.5 mb-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-1 focus:ring-blue-500" required><input type="password" id="login-password" placeholder="Password" class="w-full px-3 py-2.5 mb-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-1 focus:ring-blue-500" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-600 transition">Sign In</button></form><p class="text-center text-xs text-gray-500 mt-4">Don't have an account? <a href="#" onclick="window.showSignup()" class="text-blue-500">Create account</a></p></div></div>`;
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-6"><div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm"><i class="fas fa-school text-white text-2xl"></i></div><h1 class="text-2xl font-bold text-gray-800 dark:text-white">SBT Public School</h1><p class="text-sm text-gray-500 mt-1">AI Study Assistant</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 transition text-sm font-medium"><i class="fab fa-google text-red-500"></i> Continue with Google</button><div class="relative my-4"><div class="border-t border-gray-200"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-xs text-gray-400">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="login-password" placeholder="Password" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign In</button></form><p class="text-center text-xs text-gray-500 mt-4">New? <a href="#" onclick="window.showSignup()" class="text-blue-500">Create account</a></p></div></div>`;
             document.getElementById('email-login-form').addEventListener('submit', async(e) => {
                 e.preventDefault();
                 const email = document.getElementById('login-email').value;
@@ -415,14 +732,14 @@
         
         window.showSignup = function() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-6"><div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-user-graduate text-white text-2xl"></i></div><h1 class="text-2xl font-bold text-gray-800 dark:text-white">Create Account</h1><p class="text-sm text-gray-500">Start your learning journey</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm"><i class="fab fa-google text-red-500"></i>Google</button><div class="relative my-4"><div class="border-t"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-xs text-gray-400">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full name" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="email" id="signup-email" placeholder="Email address" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="signup-password" placeholder="Password (min 6 characters)" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign Up</button></form><p class="text-center text-xs text-gray-500 mt-4">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-blue-500">Sign In</a></p></div></div>`;
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-6"><div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-user-graduate text-white text-2xl"></i></div><h1 class="text-2xl font-bold text-gray-800 dark:text-white">Create Account</h1><p class="text-sm text-gray-500">Start learning with AI</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm"><i class="fab fa-google text-red-500"></i> Google</button><div class="relative my-4"><div class="border-t"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-xs text-gray-400">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full name" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="email" id="signup-email" placeholder="Email" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="signup-password" placeholder="Password (min 6)" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign Up</button></form><p class="text-center text-xs text-gray-500 mt-4">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-blue-500">Sign In</a></p></div></div>`;
             document.getElementById('signup-form').addEventListener('submit', async(e) => {
                 e.preventDefault();
                 const name = document.getElementById('signup-name').value;
                 const email = document.getElementById('signup-email').value;
                 const password = document.getElementById('signup-password').value;
                 const errDiv = document.getElementById('auth-error');
-                if(password.length < 6) { errDiv.textContent = 'Password must be at least 6 characters'; errDiv.classList.remove('hidden'); return; }
+                if(password.length < 6) { errDiv.textContent = 'Password too short'; errDiv.classList.remove('hidden'); return; }
                 try {
                     const userCred = await auth.createUserWithEmailAndPassword(email, password);
                     await userCred.user.updateProfile({ displayName: name });
@@ -439,21 +756,93 @@
         
         window.renderAuthScreen = renderAuthScreen;
         
-        // ========== MAIN CHAT UI ==========
+        // Main Chat UI
         function renderChatUI() {
+            const user = window.currentUser;
+            const displayName = user?.displayName || user?.email?.split('@')[0] || 'Student';
+            const email = user?.email || '';
+            const initial = displayName.charAt(0).toUpperCase();
+            const photoURL = user?.photoURL;
+            const createdAt = user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Recently';
+            
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="flex h-screen"><div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-40 hidden md:hidden" onclick="toggleSidebar()"></div><div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-[#1e1e2f] border-r border-gray-200 dark:border-gray-800 z-50 hidden md:relative md:flex flex-col"><div class="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between"><div class="flex items-center gap-2"><i class="fas fa-robot text-blue-500"></i><span class="font-semibold text-gray-800 dark:text-white text-sm">SBT Tutor</span></div><button onclick="toggleSidebar()" class="md:hidden text-gray-500">✕</button></div><div class="p-3"><button onclick="window.newChat()" class="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1"><i class="fas fa-plus text-xs"></i> New Chat</button></div><div id="sidebar-content" class="flex-1 overflow-y-auto px-2 py-2"></div><div class="p-3 border-t border-gray-200 dark:border-gray-800"><button onclick="toggleDarkMode()" class="w-full text-left text-sm text-gray-600 dark:text-gray-400 py-1.5"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-2"></i>${window.darkMode ? 'Light' : 'Dark'} Mode</button><button onclick="firebase.auth().signOut()" class="w-full text-left text-sm text-red-500 py-1.5"><i class="fas fa-sign-out-alt mr-2"></i>Sign Out</button></div></div><div class="flex-1 flex flex-col h-screen overflow-hidden"><div class="border-b border-gray-200 dark:border-gray-800 px-4 py-2.5 flex items-center gap-2 bg-white dark:bg-[#1e1e2f]"><button onclick="toggleSidebar()" class="md:hidden p-1"><i class="fas fa-bars text-gray-600 text-lg"></i></button><i class="fas fa-graduation-cap text-blue-500"></i><h1 class="font-semibold text-gray-800 dark:text-white text-sm">SBT Public School AI</h1><div class="ml-auto text-xs text-gray-400"><i class="fas fa-lock text-green-500 mr-1 text-[10px]"></i>Private</div></div><div id="chat-messages-container" class="flex-1 overflow-y-auto p-3 chat-scroll bg-white dark:bg-[#1e1e2f]"></div><div class="border-t border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-[#1e1e2f]"><div class="flex gap-2"><textarea id="message-input" rows="1" placeholder="Ask me anything... I'll explain step by step" class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm resize-none focus:ring-1 focus:ring-blue-500" style="min-height: 40px; max-height: 100px;"></textarea><button id="voice-btn" class="px-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 transition"><i class="fas fa-microphone text-gray-600 text-sm"></i></button><button id="send-btn" class="px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition"><i class="fas fa-paper-plane text-sm"></i></button></div><p class="text-[10px] text-center text-gray-400 mt-2">🔒 Your chat history is private to your email account</p></div></div></div>`;
+            app.innerHTML = `
+                <div class="flex h-screen">
+                    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
+                    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-[#1e1e2f] border-r border-gray-200 dark:border-gray-800 z-50 hidden md:relative md:flex flex-col">
+                        <div class="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                            <div class="flex items-center gap-2"><i class="fas fa-school text-blue-500"></i><span class="font-semibold text-gray-800 dark:text-white text-sm">SBT Public School</span></div>
+                            <button onclick="toggleSidebar()" class="md:hidden text-gray-500">✕</button>
+                        </div>
+                        <div class="p-3"><button onclick="window.newChat()" class="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1"><i class="fas fa-plus text-xs"></i> New Chat</button></div>
+                        <div id="sidebar-content" class="flex-1 overflow-y-auto px-2 py-2"></div>
+                        <div class="p-3 border-t border-gray-200 dark:border-gray-800"><button onclick="toggleDarkMode()" class="w-full text-left text-sm text-gray-600 dark:text-gray-400 py-1.5"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-2"></i>${window.darkMode ? 'Light' : 'Dark'} Mode</button><button onclick="firebase.auth().signOut()" class="w-full text-left text-sm text-red-500 py-1.5"><i class="fas fa-sign-out-alt mr-2"></i>Sign Out</button></div>
+                    </div>
+                    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+                        <div class="border-b border-gray-200 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between bg-white dark:bg-[#1e1e2f]">
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleSidebar()" class="md:hidden p-1"><i class="fas fa-bars text-gray-600 text-lg"></i></button>
+                                <i class="fas fa-school text-blue-500"></i>
+                                <h1 class="font-semibold text-gray-800 dark:text-white text-sm">Welcome to SBT Public School</h1>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2">
+                                    <div id="api-status-dot" class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span id="api-status-text" class="text-xs text-green-600 dark:text-green-400">AI Ready</span>
+                                </div>
+                                <div class="relative">
+                                    <button onclick="toggleProfileDropdown()" class="three-dot-btn w-8 h-8 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 transition">
+                                        <i class="fas fa-ellipsis-v text-sm"></i>
+                                    </button>
+                                    <div id="profile-dropdown" class="dropdown-menu hidden absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                        <div class="p-4 border-b flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-full user-avatar flex items-center justify-center text-white font-semibold text-base overflow-hidden flex-shrink-0">
+                                                <img id="dropdown-avatar-img" src="${photoURL || ''}" class="w-full h-full object-cover ${photoURL ? '' : 'hidden'}">
+                                                <span id="dropdown-user-initial" class="${photoURL ? 'hidden' : ''}">${initial}</span>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p id="dropdown-user-name" class="text-sm font-semibold text-gray-800 dark:text-white truncate">${escapeHtml(displayName)}</p>
+                                                <p id="dropdown-user-email" class="text-xs text-gray-500 truncate">${escapeHtml(email)}</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-2">
+                                            <div class="px-3 py-2 text-xs text-gray-500"><i class="fas fa-school mr-2 w-4"></i>SBT Public School</div>
+                                            <div class="px-3 py-2 text-xs text-gray-500"><i class="fas fa-calendar-alt mr-2 w-4"></i><span id="member-since">Member since ${createdAt}</span></div>
+                                            <div class="px-3 py-2 text-xs text-gray-500 border-b mb-1"><i class="fas fa-lock mr-2 w-4"></i>Private & Secure</div>
+                                            <button onclick="toggleDarkMode()" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-2 w-4"></i>${window.darkMode ? 'Light Mode' : 'Dark Mode'}</button>
+                                            <button onclick="firebase.auth().signOut()" class="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition mt-1"><i class="fas fa-sign-out-alt mr-2 w-4"></i>Sign Out</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="chat-messages-container" class="flex-1 overflow-y-auto p-3 chat-scroll bg-white dark:bg-[#1e1e2f]"></div>
+                        <div class="border-t border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-[#1e1e2f]">
+                            <div class="flex gap-2">
+                                <textarea id="message-input" rows="1" placeholder="Ask me anything... I'll explain step by step" class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm resize-none focus:ring-1 focus:ring-blue-500" style="min-height: 40px;"></textarea>
+                                <button id="voice-btn" class="px-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 transition"><i class="fas fa-microphone text-gray-600 text-sm"></i></button>
+                                <button id="send-btn" class="px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition"><i class="fas fa-paper-plane text-sm"></i></button>
+                            </div>
+                            <p class="text-[10px] text-center text-gray-400 mt-2">🔒 Private history • Click <i class="fas fa-volume-up"></i> on any AI message to listen</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            updateUserProfileUI();
             renderChatMessages();
             loadUserSessions(window.currentUser.uid);
+            
             const sendBtn = document.getElementById('send-btn');
             const messageInput = document.getElementById('message-input');
             const voiceBtn = document.getElementById('voice-btn');
+            
             sendBtn.onclick = () => { const text = messageInput.value.trim(); if(text) { messageInput.value = ''; window.sendMessage(text); } };
             messageInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); } };
             voiceBtn.onclick = () => { const origIcon = voiceBtn.innerHTML; voiceBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>'; const recog = startVoiceInput((text) => { messageInput.value = text; window.sendMessage(text); voiceBtn.innerHTML = origIcon; }); setTimeout(() => { if(recog) recog.abort(); voiceBtn.innerHTML = origIcon; }, 8000); };
         }
         
-        // Initialize app
+        // Initialize
         window.messages = [];
         window.sessions = [];
         window.currentSessionId = null;
@@ -468,6 +857,8 @@
         });
         
         window.speechSynthesis.getVoices();
+        window.toggleVoiceMessage = toggleVoice;
+        window.stopCurrentVoice = stopCurrentVoice;
     </script>
 </body>
     </html>
