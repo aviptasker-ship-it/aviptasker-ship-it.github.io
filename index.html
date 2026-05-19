@@ -14,75 +14,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
-        * { 
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Mobile-optimized scrollbar */
-        .chat-scroll::-webkit-scrollbar { width: 3px; }
+        * { font-family: 'Inter', sans-serif; }
+        .chat-scroll::-webkit-scrollbar { width: 4px; }
         .chat-scroll::-webkit-scrollbar-track { background: transparent; }
-        .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark .chat-scroll::-webkit-scrollbar-thumb { background: #475569; }
-        
-        /* Smooth animations */
-        .message-enter { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        
+        .chat-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        .dark .chat-scroll::-webkit-scrollbar-thumb { background: #374151; }
+        .message-enter { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .typing-dot { animation: typingPulse 1.4s infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typingPulse { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-3px); opacity: 1; } }
-        
-        /* Mobile-first text sizes */
-        .chat-bubble { 
-            word-break: break-word; 
-            line-height: 1.4; 
-            font-size: 0.875rem;
-        }
-        
-        /* Code blocks - mobile friendly */
-        pre { 
-            border-radius: 0.5rem; 
-            overflow-x: auto; 
-            padding: 0.625rem; 
-            margin: 0.5rem 0; 
-            background: #0f172a !important; 
-            font-size: 0.75rem;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        code { 
-            font-family: 'Courier New', monospace; 
-            font-size: 0.7rem;
-        }
-        
+        @keyframes typingPulse { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
+        .chat-bubble { word-break: break-word; line-height: 1.5; }
+        pre { border-radius: 0.5rem; overflow-x: auto; padding: 0.75rem; margin: 0.5rem 0; background: #1e1e2f !important; font-size: 0.75rem; }
         .toast-show { animation: slideUp 0.2s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { background: #ffffff; }
         .dark body { background: #1e1e2f; }
-        
         .user-avatar { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
         .three-dot-btn { transition: all 0.2s ease; }
-        .three-dot-btn:active { background: #e5e7eb; }
-        .dropdown-menu { animation: dropdownFade 0.12s ease-out; }
-        @keyframes dropdownFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Mobile responsive adjustments */
-        @media (max-width: 640px) {
-            .chat-bubble { font-size: 0.8125rem; }
-            pre { font-size: 0.7rem; padding: 0.5rem; }
-            .message-enter { margin-bottom: 0.75rem; }
-            .px-3 { padding-left: 0.625rem; padding-right: 0.625rem; }
-            .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        }
-        
-        /* Prevent text overflow */
-        .break-words { word-wrap: break-word; overflow-wrap: break-word; }
-        
-        /* Button tap feedback */
-        button:active { transform: scale(0.96); transition: transform 0.05s; }
+        .three-dot-btn:hover { background: #f3f4f6; }
+        .dark .three-dot-btn:hover { background: #374151; }
+        .dropdown-menu { animation: dropdownFade 0.15s ease-out; }
+        @keyframes dropdownFade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .voice-btn-active { animation: voicePulse 1s infinite; }
+        @keyframes voicePulse { 0% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.6; } }
     </style>
 </head>
 <body class="bg-white dark:bg-[#1e1e2f] transition-colors duration-200">
@@ -105,7 +61,7 @@
         const database = firebase.database();
 
         // ============================================
-        // OPENROUTER API KEY
+        // OPENROUTER API KEY - WORKING CONFIGURATION
         // ============================================
         const OPENROUTER_API_KEY = "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";
         const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -115,25 +71,34 @@
         let currentlyPlayingMessageId = null;
         let currentUtterance = null;
         
-        // API Functions
+        // ============================================
+        // AI RESPONSE FUNCTION - FIXED
+        // ============================================
         async function getAIResponse(userMessage, history = []) {
             try {
+                console.log("Sending request to OpenRouter...", userMessage);
+                
+                // Build messages array
                 const messages = [
                     {
                         role: "system",
                         content: `You are "SBT Public School AI Tutor" - a warm, patient teacher for students.
 
 RULES:
-- Explain EVERY topic STEP-BY-STEP like teaching a student
+- Explain EVERY topic STEP-BY-STEP like teaching a 10th grade student
 - Use simple language and emojis 😊
 - For math: show formula → substitute → calculate → answer
 - For coding: show code → explain each line → output
-- Keep responses clear and concise
+- Keep responses clear (2-4 paragraphs)
 - End with a friendly follow-up question`
                     },
-                    { role: "user", content: userMessage }
+                    {
+                        role: "user",
+                        content: userMessage
+                    }
                 ];
                 
+                // Add conversation history
                 if (history && history.length > 0) {
                     const recentHistory = history.slice(-6);
                     for (const msg of recentHistory) {
@@ -143,6 +108,14 @@ RULES:
                         });
                     }
                 }
+                
+                const requestBody = {
+                    model: "google/gemini-2.0-flash-lite-001",
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 1000,
+                    top_p: 0.95
+                };
                 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -155,23 +128,20 @@ RULES:
                         'HTTP-Referer': 'https://sbt-public-school.edu',
                         'X-Title': 'SBT AI Study Assistant'
                     },
-                    body: JSON.stringify({
-                        model: "google/gemini-2.0-flash-lite-001",
-                        messages: messages,
-                        temperature: 0.7,
-                        max_tokens: 800,
-                        top_p: 0.95
-                    }),
+                    body: JSON.stringify(requestBody),
                     signal: controller.signal
                 });
                 
                 clearTimeout(timeoutId);
                 
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("API Error:", response.status, errorText);
                     throw new Error(`API error: ${response.status}`);
                 }
                 
                 const data = await response.json();
+                console.log("API Response:", data);
                 
                 if (data.choices && data.choices[0] && data.choices[0].message) {
                     const aiResponse = data.choices[0].message.content;
@@ -183,80 +153,129 @@ RULES:
                 return getFallbackResponse(userMessage);
                 
             } catch(error) {
-                console.error("API error:", error);
+                console.error("OpenRouter error:", error);
                 return getFallbackResponse(userMessage);
             }
         }
         
+        // Fallback responses (always works)
         function getFallbackResponse(userMessage) {
             const lower = userMessage.toLowerCase();
             
-            if (lower.includes('hello') || lower.includes('hi')) {
-                return `👋 **Hello! Welcome to SBT Public School!**
+            if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+                return `👋 **Hello! Welcome to SBT Public School AI Tutor!**
 
-I'm your AI tutor. I explain everything step by step.
+I'm here to help you learn anything step by step. What would you like to study today?
 
 📚 **I can help with:**
-• Mathematics (Algebra, Calculus)
-• Programming (Python, JavaScript)
+• Mathematics (Algebra, Calculus, Geometry)
+• Programming (Python, JavaScript, HTML/CSS)
 • Science (Physics, Chemistry, Biology)
 • English & Writing
+• Exam preparation & study tips
 
-**What would you like to learn today?** 🎓`;
+**Just type your question!** 🎓`;
             }
             
-            if (lower.includes('math') || lower.includes('solve')) {
-                return `📐 **Step-by-Step Math**
+            if (lower.includes('math') || lower.includes('solve') || lower.includes('equation')) {
+                return `📐 **Step-by-Step Math Solution**
 
-**Step 1**: Understand the problem
-**Step 2**: Choose the formula
-**Step 3**: Substitute values
-**Step 4**: Calculate
-**Step 5**: Verify answer
+**Step 1**: Understand the problem - write down what's given and what we need to find
 
-**Example**: 2x + 5 = 15
-→ 2x = 10
-→ x = 5
+**Step 2**: Choose the right formula or method
 
-📝 **Want me to solve a specific problem?**`;
+**Step 3**: Substitute the values carefully
+
+**Step 4**: Calculate step by step (one operation at a time)
+
+**Step 5**: Verify your answer
+
+**Example**: Solve 2x + 5 = 15
+- Subtract 5 from both sides: 2x = 10
+- Divide both sides by 2: x = 5
+- Check: 2(5) + 5 = 10 + 5 = 15 ✅
+
+📝 **Would you like me to solve a specific math problem for you?**`;
             }
             
-            if (lower.includes('code') || lower.includes('python')) {
-                return `💻 **Programming Step-by-Step**
+            if (lower.includes('code') || lower.includes('python') || lower.includes('programming')) {
+                return `💻 **Programming Explained Step-by-Step**
 
-**Step 1**: Plan the program
-**Step 2**: Setup variables
-**Step 3**: Write the logic
-**Step 4**: Test the code
-**Step 5**: Debug if needed
+**Step 1**: Plan - What should your program do? Write pseudocode.
+
+**Step 2**: Setup - Import libraries, define variables.
+
+**Step 3**: Write the logic - Use loops, conditions, functions.
+
+**Step 4**: Test - Run with sample inputs.
+
+**Step 5**: Debug - Fix errors one by one.
 
 **Example (Python)**:
 \`\`\`python
-for i in range(5):
+# Print numbers 1 to 5
+for i in range(1, 6):
     print(i)
 \`\`\`
-This prints numbers 0 to 4.
+
+**Output**:
+\`\`\`
+1
+2
+3
+4
+5
+\`\`\`
+
+**Explanation**: \`range(1,6)\` creates numbers 1,2,3,4,5. The loop runs 5 times and prints each number.
 
 👩‍💻 **What code would you like me to explain?**`;
             }
             
-            return `📚 **Welcome to SBT Public School!**
+            if (lower.includes('science') || lower.includes('physics') || lower.includes('chemistry')) {
+                return `🔬 **Science Concept Breakdown**
 
-I'm your AI teacher. I explain everything step by step.
+**Newton's First Law of Motion (Inertia)**
 
-**I can help with:**
-• ✏️ **Mathematics** - Step-by-step solutions
-• 💻 **Programming** - Python, JavaScript
-• 🔬 **Science** - Physics, Chemistry
-• 📖 **English** - Grammar, Essays
-• 🎯 **Study Tips** - Exam prep
+**Step 1**: An object at rest stays at rest
+**Step 2**: An object in motion stays in motion  
+**Step 3**: This continues UNLESS an outside force acts on it
 
-**Just type your question below!** 🎓
+**Real-life example**: 
+- When a car suddenly stops, your body wants to keep moving forward - that's why we wear seatbelts!
 
-Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
+**Fun Fact**: A ball rolling on a frictionless surface would never stop!
+
+🧪 **Would you like me to explain any specific science topic in detail?**`;
+            }
+            
+            return `📚 **Welcome to SBT Public School AI Tutor!**
+
+I'm your personal AI teacher! I explain everything **step by step** - just like a real teacher.
+
+**What I can help you with:**
+
+• ✏️ **MATHEMATICS** - Algebra, Calculus, Geometry, Statistics
+• 💻 **PROGRAMMING** - Python, JavaScript, HTML, CSS, Java
+• 🔬 **SCIENCE** - Physics, Chemistry, Biology
+• 📖 **ENGLISH** - Grammar, Essay Writing, Vocabulary
+• 🎯 **STUDY TIPS** - Memory techniques, Exam preparation
+
+**How I teach:**
+1️⃣ You ask a question
+2️⃣ I explain step by step with examples
+3️⃣ I make sure you understand
+4️⃣ I give practice problems
+
+**Just type your question below and I'll explain it clearly!** 🎓
+
+Example questions:
+- "Solve 3x + 7 = 22"
+- "Explain how a function works in Python"
+- "What is photosynthesis?"`;
         }
         
-        // Queue system
+        // Queue system for requests
         async function queueAIRequest(userMessage, history) {
             return new Promise((resolve, reject) => {
                 pendingRequests.push({ userMessage, history, resolve, reject });
@@ -288,8 +307,8 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                 const prevBtn = document.querySelector(`.voice-btn[data-message-id="${currentlyPlayingMessageId}"]`);
                 if (prevBtn) {
                     prevBtn.innerHTML = '<i class="fas fa-volume-up text-xs"></i>';
-                    prevBtn.classList.remove('text-red-500');
-                    prevBtn.classList.add('text-gray-500');
+                    prevBtn.classList.remove('voice-btn-active', 'text-red-500');
+                    prevBtn.classList.add('text-gray-500', 'dark:text-gray-400');
                 }
                 currentlyPlayingMessageId = null;
             }
@@ -300,7 +319,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             stopCurrentVoice();
             
             let cleanText = text.replace(/\*\*/g, '').replace(/`/g, '').replace(/#/g, '');
-            cleanText = cleanText.substring(0, 1500);
+            cleanText = cleanText.replace(/[\[\(].*?[\]\)]/g, '');
             
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.rate = 0.9;
@@ -318,7 +337,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                 if (btn) {
                     btn.innerHTML = '<i class="fas fa-stop text-xs"></i>';
                     btn.classList.remove('text-gray-500');
-                    btn.classList.add('text-red-500');
+                    btn.classList.add('voice-btn-active', 'text-red-500');
                 }
             };
             
@@ -327,8 +346,8 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                     const btn = document.querySelector(`.voice-btn[data-message-id="${messageId}"]`);
                     if (btn) {
                         btn.innerHTML = '<i class="fas fa-volume-up text-xs"></i>';
-                        btn.classList.remove('text-red-500');
-                        btn.classList.add('text-gray-500');
+                        btn.classList.remove('voice-btn-active', 'text-red-500');
+                        btn.classList.add('text-gray-500', 'dark:text-gray-400');
                     }
                     currentlyPlayingMessageId = null;
                 }
@@ -339,8 +358,8 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                     const btn = document.querySelector(`.voice-btn[data-message-id="${messageId}"]`);
                     if (btn) {
                         btn.innerHTML = '<i class="fas fa-volume-up text-xs"></i>';
-                        btn.classList.remove('text-red-500');
-                        btn.classList.add('text-gray-500');
+                        btn.classList.remove('voice-btn-active', 'text-red-500');
+                        btn.classList.add('text-gray-500', 'dark:text-gray-400');
                     }
                     currentlyPlayingMessageId = null;
                 }
@@ -361,10 +380,10 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
         // Helper functions
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-3 py-1.5 rounded-lg text-white text-xs z-50 toast-show shadow-md ${type === 'error' ? 'bg-red-500' : 'bg-gray-800'}`;
-            toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-1 text-[10px]"></i>${message}`;
+            toast.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white text-xs z-50 toast-show shadow-md ${type === 'error' ? 'bg-red-500' : 'bg-gray-800'}`;
+            toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-1 text-xs"></i>${message}`;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
+            setTimeout(() => toast.remove(), 2500);
         }
         
         function formatDate(date) { return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
@@ -387,7 +406,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             setTimeout(() => { 
                 const container = document.getElementById('chat-messages-container'); 
                 if(container) container.scrollTop = container.scrollHeight; 
-            }, 80); 
+            }, 100); 
         }
         
         function startVoiceInput(onResult) {
@@ -481,7 +500,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
         
         async function updateSessionTitle(userId, sessionId, firstMsg) {
             if(!firstMsg) return;
-            const shortTitle = firstMsg.length > 30 ? firstMsg.substring(0, 30) + "..." : firstMsg;
+            const shortTitle = firstMsg.length > 35 ? firstMsg.substring(0, 35) + "..." : firstMsg;
             await database.ref(`sbt_users/${userId}/sessions/${sessionId}`).update({ title: shortTitle });
             await loadUserSessions(userId);
         }
@@ -492,13 +511,15 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             if(window.isGenerating) { showToast("Please wait...", 'error'); return; }
             if(!content.trim()) return;
             
+            // Add user message
             const userMessage = { role: 'user', content: content.trim() };
             window.messages.push(userMessage);
             renderChatMessages();
             
+            // Create or get session
             let sessionId = window.currentSessionId;
             if(!sessionId) {
-                sessionId = await createNewSession(window.currentUser.uid, content.slice(0, 30), userMessage);
+                sessionId = await createNewSession(window.currentUser.uid, content.slice(0, 35), userMessage);
                 if(sessionId) {
                     window.currentSessionId = sessionId;
                     await updateSessionTitle(window.currentUser.uid, sessionId, content);
@@ -509,6 +530,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                 if(window.messages.length === 1) await updateSessionTitle(window.currentUser.uid, sessionId, content);
             }
             
+            // Get AI response
             window.isGenerating = true;
             renderTypingIndicator(true);
             
@@ -537,8 +559,8 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                 if(!indicator) {
                     indicator = document.createElement('div');
                     indicator.id = 'typing-indicator';
-                    indicator.className = 'flex justify-start mb-2 message-enter';
-                    indicator.innerHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl px-3 py-1.5"><div class="flex gap-1"><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div></div><span class="text-[10px] text-gray-500 ml-1">Typing...</span></div>`;
+                    indicator.className = 'flex justify-start mb-3 message-enter';
+                    indicator.innerHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2"><div class="flex gap-1"><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div><div class="typing-dot w-1.5 h-1.5 bg-gray-400 rounded-full"></div></div><span class="text-xs text-gray-500 ml-2">SBT Tutor is typing...</span></div>`;
                     container.appendChild(indicator);
                     scrollToBottom();
                 }
@@ -550,7 +572,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             if(!container) return;
             
             if(!window.messages || window.messages.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-4 py-8"><div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-3 shadow-sm"><i class="fas fa-school text-white text-xl"></i></div><h2 class="text-base font-semibold text-gray-800 dark:text-white mb-1">Welcome to SBT Public School</h2><p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Step-by-step explanations</p><div class="flex flex-wrap gap-1.5 justify-center"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[11px]">📐 Math</span><span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[11px]">💻 Code</span><span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[11px]">🔬 Science</span></div><p class="text-[11px] text-gray-400 mt-4">Ask any question — I'll explain step by step!</p></div>`;
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-4 py-8"><div class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-4 shadow-sm"><i class="fas fa-school text-white text-2xl"></i></div><h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-1">Welcome to SBT Public School</h2><p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Step-by-step explanations • Private & Secure</p><div class="flex flex-wrap gap-2 justify-center"><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">📐 Math</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">💻 Code</span><span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">🔬 Science</span></div><p class="text-xs text-gray-400 mt-6">Ask any question — I'll explain step by step!</p></div>`;
                 return;
             }
             
@@ -562,9 +584,9 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
                 const renderedContent = isUser ? escapeHtml(msg.content) : renderMarkdown(msg.content);
                 
                 if (isUser) {
-                    html += `<div class="flex justify-end mb-2 message-enter"><div class="max-w-[80%] bg-blue-500 text-white rounded-2xl rounded-tr-md px-3 py-1.5 text-sm"><div class="chat-bubble break-words">${renderedContent}</div><div class="flex justify-end mt-0.5 opacity-50"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[9px] hover:opacity-100"><i class="far fa-copy"></i></button></div></div></div>`;
+                    html += `<div class="flex justify-end mb-3 message-enter"><div class="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tr-md px-3 py-2 text-sm"><div class="chat-bubble text-sm leading-relaxed">${renderedContent}</div><div class="flex justify-end mt-1.5 opacity-60"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[10px] hover:opacity-100"><i class="far fa-copy"></i></button></div></div></div>`;
                 } else {
-                    html += `<div class="flex justify-start mb-2 message-enter"><div class="max-w-[80%] bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md px-3 py-1.5 text-sm"><div class="flex items-center gap-1 mb-0.5"><i class="fas fa-graduation-cap text-blue-500 text-[10px]"></i><span class="text-[10px] font-medium text-blue-600 dark:text-blue-400">SBT Tutor</span></div><div class="chat-bubble break-words">${renderedContent}</div><div class="flex items-center justify-end gap-2 mt-0.5 opacity-50"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[9px] hover:opacity-100"><i class="far fa-copy"></i></button><button class="voice-btn text-[9px] hover:opacity-100 text-gray-500" data-message-id="${messageId}" onclick="window.toggleVoiceMessage('${messageId}', \`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)"><i class="fas fa-volume-up text-[10px]"></i></button></div></div></div>`;
+                    html += `<div class="flex justify-start mb-3 message-enter"><div class="max-w-[85%] bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md px-3 py-2 text-sm"><div class="flex items-center gap-1.5 mb-1"><i class="fas fa-graduation-cap text-blue-500 text-xs"></i><span class="text-xs font-medium text-blue-600 dark:text-blue-400">SBT Tutor</span></div><div class="chat-bubble text-sm leading-relaxed">${renderedContent}</div><div class="flex items-center justify-end gap-2 mt-1.5 opacity-60"><button onclick="window.copyToClipboard(\`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)" class="text-[10px] hover:opacity-100"><i class="far fa-copy"></i></button><button class="voice-btn text-[10px] hover:opacity-100 text-gray-500 dark:text-gray-400" data-message-id="${messageId}" onclick="window.toggleVoiceMessage('${messageId}', \`${escapeHtml(msg.content).replace(/`/g, '\\`')}\`)"><i class="fas fa-volume-up text-xs"></i></button></div></div></div>`;
                 }
             }
             html += '</div>';
@@ -580,19 +602,22 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             navigator.clipboard.writeText(text); 
             showToast("Copied!"); 
         };
-        window.toggleVoiceMessage = function(messageId, text) { toggleVoice(messageId, text); };
+        
+        window.toggleVoiceMessage = function(messageId, text) {
+            toggleVoice(messageId, text);
+        };
         
         function renderSidebar() {
             const sidebar = document.getElementById('sidebar-content');
             if(!sidebar) return;
             if(!window.sessions || window.sessions.length === 0) {
-                sidebar.innerHTML = `<div class="text-center text-gray-400 text-[11px] py-6"><i class="fas fa-comments text-xl mb-2 opacity-50"></i><p>No chats yet</p></div>`;
+                sidebar.innerHTML = `<div class="text-center text-gray-400 text-xs py-8"><i class="fas fa-comments text-2xl mb-2 opacity-50"></i><p>No chats yet</p></div>`;
                 return;
             }
             sidebar.innerHTML = window.sessions.map(session => `
                 <div onclick="window.loadSession('${session.id}')" class="group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition ${window.currentSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800' : ''}">
-                    <div class="flex-1 min-w-0"><p class="text-xs font-medium text-gray-800 dark:text-white truncate">${escapeHtml(session.title || 'Chat')}</p><p class="text-[10px] text-gray-400">${formatDate(session.updatedAt)}</p></div>
-                    <button onclick="event.stopPropagation(); window.deleteSession('${session.id}')" class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100"><i class="fas fa-trash-alt text-red-400 text-[10px]"></i></button>
+                    <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-800 dark:text-white truncate">${escapeHtml(session.title || 'Chat')}</p><p class="text-xs text-gray-400">${formatDate(session.updatedAt)}</p></div>
+                    <button onclick="event.stopPropagation(); window.deleteSession('${session.id}')" class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20"><i class="fas fa-trash-alt text-red-400 text-xs"></i></button>
                 </div>
             `).join('');
         }
@@ -647,7 +672,19 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
         // Profile dropdown
         function toggleProfileDropdown() {
             const dropdown = document.getElementById('profile-dropdown');
-            if (dropdown) dropdown.classList.toggle('hidden');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        document.addEventListener('click', function closeDropdown(e) {
+                            if (!dropdown.contains(e.target) && !e.target.closest('.three-dot-btn')) {
+                                dropdown.classList.add('hidden');
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                        });
+                    }, 0);
+                }
+            }
         }
         
         function updateUserProfileUI() {
@@ -676,13 +713,13 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             } else if (avatarImg) {
                 avatarImg.classList.add('hidden');
                 if (initialEl) { initialEl.textContent = initial; initialEl.classList.remove('hidden'); }
-            }
+            } else if (initialEl) { initialEl.textContent = initial; initialEl.classList.remove('hidden'); }
         }
         
         // Auth UI
         function renderAuthScreen() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-5"><div class="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-school text-white text-xl"></i></div><h1 class="text-xl font-bold text-gray-800 dark:text-white">SBT Public School</h1><p class="text-xs text-gray-500 mt-1">AI Study Assistant</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm"><i class="fab fa-google text-red-500"></i> Continue with Google</button><div class="relative my-4"><div class="border-t border-gray-200"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-[11px] text-gray-400">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="login-password" placeholder="Password" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign In</button></form><p class="text-center text-xs text-gray-500 mt-4">New? <a href="#" onclick="window.showSignup()" class="text-blue-500">Create account</a></p></div></div>`;
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-6"><div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm"><i class="fas fa-school text-white text-2xl"></i></div><h1 class="text-2xl font-bold text-gray-800 dark:text-white">SBT Public School</h1><p class="text-sm text-gray-500 mt-1">AI Study Assistant</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 transition text-sm font-medium"><i class="fab fa-google text-red-500"></i> Continue with Google</button><div class="relative my-4"><div class="border-t border-gray-200"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-xs text-gray-400">OR</span></div></div><form id="email-login-form"><input type="email" id="login-email" placeholder="Email" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="login-password" placeholder="Password" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign In</button></form><p class="text-center text-xs text-gray-500 mt-4">New? <a href="#" onclick="window.showSignup()" class="text-blue-500">Create account</a></p></div></div>`;
             document.getElementById('email-login-form').addEventListener('submit', async(e) => {
                 e.preventDefault();
                 const email = document.getElementById('login-email').value;
@@ -695,7 +732,7 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
         
         window.showSignup = function() {
             const app = document.getElementById('app');
-            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-5"><div class="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-user-graduate text-white text-xl"></i></div><h1 class="text-xl font-bold text-gray-800 dark:text-white">Create Account</h1><p class="text-xs text-gray-500">Start learning with AI</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm"><i class="fab fa-google text-red-500"></i> Google</button><div class="relative my-4"><div class="border-t"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white text-[11px] text-gray-400">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full name" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="email" id="signup-email" placeholder="Email" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="signup-password" placeholder="Password (min 6)" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign Up</button></form><p class="text-center text-xs text-gray-500 mt-4">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-blue-500">Sign In</a></p></div></div>`;
+            app.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e1e2f] p-4"><div class="w-full max-w-sm"><div class="text-center mb-6"><div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-user-graduate text-white text-2xl"></i></div><h1 class="text-2xl font-bold text-gray-800 dark:text-white">Create Account</h1><p class="text-sm text-gray-500">Start learning with AI</p></div><div id="auth-error" class="hidden mb-3 p-2 bg-red-50 text-red-500 rounded-lg text-xs text-center"></div><button onclick="window.handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm"><i class="fab fa-google text-red-500"></i> Google</button><div class="relative my-4"><div class="border-t"></div><div class="absolute inset-0 flex justify-center"><span class="px-2 bg-white dark:bg-[#1e1e2f] text-xs text-gray-400">OR</span></div></div><form id="signup-form"><input type="text" id="signup-name" placeholder="Full name" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="email" id="signup-email" placeholder="Email" class="w-full px-3 py-2.5 mb-2 bg-gray-50 border rounded-xl text-sm" required><input type="password" id="signup-password" placeholder="Password (min 6)" class="w-full px-3 py-2.5 mb-3 bg-gray-50 border rounded-xl text-sm" required><button type="submit" class="w-full bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium">Sign Up</button></form><p class="text-center text-xs text-gray-500 mt-4">Already have an account? <a href="#" onclick="window.renderAuthScreen()" class="text-blue-500">Sign In</a></p></div></div>`;
             document.getElementById('signup-form').addEventListener('submit', async(e) => {
                 e.preventDefault();
                 const name = document.getElementById('signup-name').value;
@@ -732,24 +769,61 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
             app.innerHTML = `
                 <div class="flex h-screen">
                     <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
-                    <div id="sidebar" class="fixed top-0 left-0 h-full w-56 bg-white dark:bg-[#1e1e2f] border-r border-gray-200 dark:border-gray-800 z-50 hidden md:relative md:flex flex-col">
-                        <div class="p-2.5 border-b flex items-center justify-between">
-                            <div class="flex items-center gap-1.5"><i class="fas fa-school text-blue-500 text-sm"></i><span class="font-semibold text-gray-800 dark:text-white text-xs">SBT Public School</span></div>
-                            <button onclick="toggleSidebar()" class="md:hidden text-gray-500 text-sm">✕</button>
+                    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-[#1e1e2f] border-r border-gray-200 dark:border-gray-800 z-50 hidden md:relative md:flex flex-col">
+                        <div class="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                            <div class="flex items-center gap-2"><i class="fas fa-school text-blue-500"></i><span class="font-semibold text-gray-800 dark:text-white text-sm">SBT Public School</span></div>
+                            <button onclick="toggleSidebar()" class="md:hidden text-gray-500">✕</button>
                         </div>
-                        <div class="p-2.5"><button onclick="window.newChat()" class="w-full bg-blue-500 text-white py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1"><i class="fas fa-plus text-[10px]"></i> New Chat</button></div>
-                        <div id="sidebar-content" class="flex-1 overflow-y-auto px-1.5 py-1"></div>
-                        <div class="p-2.5 border-t"><button onclick="toggleDarkMode()" class="w-full text-left text-xs text-gray-600 dark:text-gray-400 py-1"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-1.5 text-[10px]"></i>${window.darkMode ? 'Light' : 'Dark'} Mode</button><button onclick="firebase.auth().signOut()" class="w-full text-left text-xs text-red-500 py-1"><i class="fas fa-sign-out-alt mr-1.5 text-[10px]"></i>Sign Out</button></div>
+                        <div class="p-3"><button onclick="window.newChat()" class="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1"><i class="fas fa-plus text-xs"></i> New Chat</button></div>
+                        <div id="sidebar-content" class="flex-1 overflow-y-auto px-2 py-2"></div>
+                        <div class="p-3 border-t border-gray-200 dark:border-gray-800"><button onclick="toggleDarkMode()" class="w-full text-left text-sm text-gray-600 dark:text-gray-400 py-1.5"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-2"></i>${window.darkMode ? 'Light' : 'Dark'} Mode</button><button onclick="firebase.auth().signOut()" class="w-full text-left text-sm text-red-500 py-1.5"><i class="fas fa-sign-out-alt mr-2"></i>Sign Out</button></div>
                     </div>
                     <div class="flex-1 flex flex-col h-screen overflow-hidden">
-                        <div class="border-b px-3 py-2 flex items-center justify-between bg-white dark:bg-[#1e1e2f]">
-                            <div class="flex items-center gap-1.5"><button onclick="toggleSidebar()" class="md:hidden p-1"><i class="fas fa-bars text-gray-600 text-sm"></i></button><i class="fas fa-school text-blue-500 text-sm"></i><h1 class="font-medium text-gray-800 dark:text-white text-xs">Welcome to SBT Public School</h1></div>
-                            <div class="flex items-center gap-2"><div class="flex items-center gap-1"><div id="api-status-dot" class="w-1.5 h-1.5 rounded-full bg-green-500"></div><span id="api-status-text" class="text-[10px] text-green-600">AI Ready</span></div><div class="relative"><button onclick="toggleProfileDropdown()" class="three-dot-btn w-7 h-7 rounded-full flex items-center justify-center"><i class="fas fa-ellipsis-v text-gray-600 text-xs"></i></button><div id="profile-dropdown" class="dropdown-menu hidden absolute right-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border z-50 overflow-hidden"><div class="p-3 border-b flex items-center gap-2"><div class="w-9 h-9 rounded-full user-avatar flex items-center justify-center text-white font-semibold text-sm overflow-hidden"><img id="dropdown-avatar-img" src="${photoURL || ''}" class="w-full h-full object-cover ${photoURL ? '' : 'hidden'}"><span id="dropdown-user-initial" class="${photoURL ? 'hidden' : ''}">${initial}</span></div><div><p id="dropdown-user-name" class="text-sm font-semibold truncate">${escapeHtml(displayName)}</p><p id="dropdown-user-email" class="text-[10px] text-gray-500 truncate">${escapeHtml(email)}</p></div></div><div class="p-1.5"><div class="px-2 py-1.5 text-[10px] text-gray-500"><i class="fas fa-calendar-alt mr-1.5 w-3"></i><span id="member-since">Member since ${createdAt}</span></div><button onclick="toggleDarkMode()" class="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-1.5 w-3 text-[10px]"></i>${window.darkMode ? 'Light Mode' : 'Dark Mode'}</button><button onclick="firebase.auth().signOut()" class="w-full text-left px-2 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg mt-0.5"><i class="fas fa-sign-out-alt mr-1.5 w-3 text-[10px]"></i>Sign Out</button></div></div></div></div>
+                        <div class="border-b border-gray-200 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between bg-white dark:bg-[#1e1e2f]">
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleSidebar()" class="md:hidden p-1"><i class="fas fa-bars text-gray-600 text-lg"></i></button>
+                                <i class="fas fa-school text-blue-500"></i>
+                                <h1 class="font-semibold text-gray-800 dark:text-white text-sm">Welcome to SBT Public School</h1>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2">
+                                    <div id="api-status-dot" class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span id="api-status-text" class="text-xs text-green-600 dark:text-green-400">AI Ready</span>
+                                </div>
+                                <div class="relative">
+                                    <button onclick="toggleProfileDropdown()" class="three-dot-btn w-8 h-8 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 transition">
+                                        <i class="fas fa-ellipsis-v text-sm"></i>
+                                    </button>
+                                    <div id="profile-dropdown" class="dropdown-menu hidden absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                        <div class="p-4 border-b flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-full user-avatar flex items-center justify-center text-white font-semibold text-base overflow-hidden flex-shrink-0">
+                                                <img id="dropdown-avatar-img" src="${photoURL || ''}" class="w-full h-full object-cover ${photoURL ? '' : 'hidden'}">
+                                                <span id="dropdown-user-initial" class="${photoURL ? 'hidden' : ''}">${initial}</span>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p id="dropdown-user-name" class="text-sm font-semibold text-gray-800 dark:text-white truncate">${escapeHtml(displayName)}</p>
+                                                <p id="dropdown-user-email" class="text-xs text-gray-500 truncate">${escapeHtml(email)}</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-2">
+                                            <div class="px-3 py-2 text-xs text-gray-500"><i class="fas fa-school mr-2 w-4"></i>SBT Public School</div>
+                                            <div class="px-3 py-2 text-xs text-gray-500"><i class="fas fa-calendar-alt mr-2 w-4"></i><span id="member-since">Member since ${createdAt}</span></div>
+                                            <div class="px-3 py-2 text-xs text-gray-500 border-b mb-1"><i class="fas fa-lock mr-2 w-4"></i>Private & Secure</div>
+                                            <button onclick="toggleDarkMode()" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"><i class="fas ${window.darkMode ? 'fa-sun' : 'fa-moon'} mr-2 w-4"></i>${window.darkMode ? 'Light Mode' : 'Dark Mode'}</button>
+                                            <button onclick="firebase.auth().signOut()" class="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition mt-1"><i class="fas fa-sign-out-alt mr-2 w-4"></i>Sign Out</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div id="chat-messages-container" class="flex-1 overflow-y-auto p-2 chat-scroll bg-white dark:bg-[#1e1e2f]"></div>
-                        <div class="border-t p-2 bg-white dark:bg-[#1e1e2f]">
-                            <div class="flex gap-1.5"><textarea id="message-input" rows="1" placeholder="Ask me anything..." class="flex-1 px-2.5 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl text-sm resize-none focus:ring-1 focus:ring-blue-500 text-sm" style="min-height: 38px; max-height: 80px;"></textarea><button id="voice-btn" class="px-2.5 rounded-xl bg-gray-100 dark:bg-gray-800"><i class="fas fa-microphone text-gray-600 text-sm"></i></button><button id="send-btn" class="px-3 rounded-xl bg-blue-500 text-white"><i class="fas fa-paper-plane text-sm"></i></button></div>
-                            <p class="text-[9px] text-center text-gray-400 mt-1.5">🔒 Private history • Click 🔊 on AI message to listen</p>
+                        <div id="chat-messages-container" class="flex-1 overflow-y-auto p-3 chat-scroll bg-white dark:bg-[#1e1e2f]"></div>
+                        <div class="border-t border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-[#1e1e2f]">
+                            <div class="flex gap-2">
+                                <textarea id="message-input" rows="1" placeholder="Ask me anything... I'll explain step by step" class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm resize-none focus:ring-1 focus:ring-blue-500" style="min-height: 40px;"></textarea>
+                                <button id="voice-btn" class="px-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 transition"><i class="fas fa-microphone text-gray-600 text-sm"></i></button>
+                                <button id="send-btn" class="px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition"><i class="fas fa-paper-plane text-sm"></i></button>
+                            </div>
+                            <p class="text-[10px] text-center text-gray-400 mt-2">🔒 Private history • Click <i class="fas fa-volume-up"></i> on any AI message to listen</p>
                         </div>
                     </div>
                 </div>
@@ -783,6 +857,8 @@ Example: "Solve 3x + 7 = 22" or "Explain Python loops"`;
         });
         
         window.speechSynthesis.getVoices();
+        window.toggleVoiceMessage = toggleVoice;
+        window.stopCurrentVoice = stopCurrentVoice;
     </script>
 </body>
     </html>
